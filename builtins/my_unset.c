@@ -1,0 +1,63 @@
+#include "../exec.h"
+
+void	free_and_update(t_env **prev, t_env **current, t_env **env)
+{
+	t_env	*temp;//?
+
+	temp = *current;
+	if (!*prev)
+	{
+		*env = temp->next;
+		*current = *env;
+	}
+	else
+	{
+		(*prev)->next = temp->next;
+		*current = (*prev)->next;
+	}
+	free(temp);
+}
+
+int	my_unset(t_env **env, char **args)
+{
+	int		i;
+	t_env	*current;
+	t_env	*prev;
+
+	if (!*args)
+		return (1);
+	i = -1;
+	while (args[++i])
+	{
+		(1) && (current = *env, prev = NULL);
+		while (current)
+		{
+			if (!ft_strncmp(current->value, args[i], ft_strlen(args[i]))
+				&& current->value[ft_strlen(args[i])] == '=')
+				free_and_update(&prev, &current, env);
+			else
+				(1) && (prev = current, current = current->next);
+		}
+	}
+	return (0);
+}
+
+/*int	main(int ac, char **av, char **envp)
+{
+	t_shell	*shell;
+	t_env	*tmp;
+
+	shell = malloc(sizeof(t_shell));
+	if (!copy_env(envp, &shell->env))
+		return (free(shell), 1);
+	my_unset(&shell->env, av + 1);
+	tmp = shell->env;
+	while (tmp)
+	{
+		printf("%s\n", tmp->value);
+		tmp = tmp->next;
+	}
+	free_env(shell->env);
+	free(shell);
+	return (0);
+}*/
