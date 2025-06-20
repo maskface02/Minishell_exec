@@ -1,33 +1,39 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   my_cd.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/06/19 18:14:46 by zatais            #+#    #+#             */
+/*   Updated: 2025/06/19 18:14:46 by zatais           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
 #include "../exec.h"
-#include <string.h>
-#include <unistd.h>
 
-int	home_env_var(t_env *env)
-{
-	while (env)
-	{
-		if (!ft_strncmp(env->value, "HOME=", 5))
-			return (1);
-		env = env->next;
-	}
-	return (0);
-}
-int	my_cd(t_env *env, char **args)
+int	my_cd(t_shell *shell, char **args)
 {
 	char	*path;
+	char	*old_path;
 
-	if (!(args + 1) && *(args + 1))
+	old_path = getcwd(NULL, 0);
+	if (*args && *(args + 1))
 		return (cmd_error("cd", NULL, "too many arguments"), 1);
-	if (!args)
+	if (!*args)
 		path = "/home";
 	else
 		path = *args;
-	if (!ft_strncmp(path, "/home", 5) && !home_env_var(env))
+	if (!ft_strncmp(path, "/home", 5) && !is_var_exist(shell->env, "HOME="))
 		return (cmd_error("cd", NULL, "HOME not set"), 1);
 	if (chdir(path))
 		return (cmd_error("cd", path, strerror(errno)), 1);
-  //set PWD var to cwd
+	if (shell->cwd)
+		free(shell->cwd);
+	shell->cwd = getcwd(NULL, 0);
+	// set PWD var to cwd with export
+	// update the oldpwd to old_path if it exist in env
+  // free old_path
 	return (0);
 }
 
@@ -37,11 +43,12 @@ int	main(int ac, char **av, char **envp)
 	char	**args;
 
 	shell = malloc(sizeof(t_shell));
+	shell->cwd = getcwd(NULL, 0);
 	copy_env(envp, &shell->env);
 	args = malloc(16);
 	args[0] = "unset";
 	args[1] = "HOME";
-//	my_unset(&shell->env, args + 1);
-	my_cd(shell->env, av + 1);
-	my_pwd();
+	//	my_unset(&shell->env, args + 1);
+	// my_cd(shell, &av[1]);
+	my_pwd(shell);
 }

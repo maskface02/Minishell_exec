@@ -1,10 +1,22 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   my_env.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/06/19 18:14:59 by zatais            #+#    #+#             */
+/*   Updated: 2025/06/19 18:14:59 by zatais           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../exec.h"
 
-int	path_var_exist(t_env *env)
+int	is_var_exist(t_env *env, char *var)
 {
 	while (env)
 	{
-		if (!ft_strncmp(env->value, "PATH=", 5))
+		if (!ft_strncmp(env->value, var, sizeof(var)))
 			return (1);
 		env = env->next;
 	}
@@ -15,9 +27,9 @@ int	my_env(t_env *env, char **args)
 {
 	t_env	*tmp;
 
-  if (*args)
-    return (cmd_error("env", NULL, "too many arguments"), 1);
-	if (!path_var_exist(env))
+	if (*args)
+		return (cmd_error("env", NULL, "too many arguments"), 1);
+	if (!is_var_exist(env, "PATH="))
 		return (cmd_error("env", NULL, "No such file or directory"), 1);
 	tmp = env;
 	while (tmp)
