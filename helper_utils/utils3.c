@@ -33,3 +33,52 @@ int	ft_strcmp(char *s1, char *s2)
 		i++;
 	return (s1[i] - s2[i]);
 }
+
+char	*ft_strndup(char *s, size_t n)
+{
+	char			*res;
+	unsigned int	i;
+
+	i = 0;
+	res = malloc(sizeof(n + 1));
+	if (!res)
+		return (NULL);
+	while (i < n)
+	{
+		res[i] = s[i];
+		i++;
+	}
+	res[i] = '\0';
+	return (res);
+}
+
+char	*ft_strchr(char *s, int c)
+{
+	int	i;
+
+	i = 0;
+	while (s[i])
+	{
+		if (s[i] == (char)c)
+			return ((char *)&s[i]);
+		i++;
+	}
+	if ((char)c == '\0')
+		return ((char *)&s[i]);
+	return (NULL);
+}
+
+int	ft_isalnum(int c)
+{
+	if ((c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122))
+		return (1);
+	return (0);
+}
+
+
+int	ft_isalpha(int c)
+{
+	if ((c >= 97 && c <= 122) || (c >= 65 && c <= 90))
+		return (1);
+	return (0);
+}
