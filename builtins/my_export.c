@@ -159,7 +159,7 @@ int	process_argument(t_env **env, char *arg)
 	{
 		if (eq)
 		{
-			free(node->value)// here the error ;
+			free(node->value);// here the error ;
 			node->value = ft_strdup(arg);
 		}
 	}
