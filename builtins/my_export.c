@@ -22,37 +22,59 @@ char	*extract_var(char *str)
 		len = eq - str;
 	else
 		len = ft_strlen(str);
-	name = ft_strndup(str, len) // and here
+	name = ft_strndup(str, len); // and here
 	return (name);
 }
 
 int	compare_env_vars(char *s1, char *s2, int *error)
 {
-	char	*var1;
-	char	*var2;
-	int		result;
+	char	*eq1;
+	char	*eq2;
+	size_t	len1;
+	size_t	len2;
+	size_t	min_len;
+	size_t	i;
 
-	var1 = extract_var(s1);
-	if (!var1)
-		return (*error = 1, 0);
-	var2 = extract_var(s2);
-	if (!var2)
-		return (*error = 1, 0);
-	result = ft_strcmp(var1, var2);// error
-	free(var1);
-	free(var2);
-	return (result);
+	if (!s1 || !s2)
+	{
+		*error = 1;
+		return (0);
+	}
+	eq1 = ft_strchr(s1, '=');
+	if (eq1)
+		len1 = eq1 - s1;
+	else
+		len1 = ft_strlen(s1);
+	eq2 = ft_strchr(s2, '=');
+	if (eq2)
+		len2 = eq2 - s2;
+	else
+		len2 = ft_strlen(s2);
+	min_len = len1;
+	if (len2 < min_len)
+		min_len = len2;
+	i = 0;
+	while (i < min_len)
+	{
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		i++;
+	}
+	return (0);
 }
 
 t_env	*find_min_node(t_env *current, int *error)
 {
 	t_env	*min;
 	t_env	*comp;
+	int		i;
 
 	min = current;
 	comp = current->next;
+	i = 0;
 	while (comp)
 	{
+		++i;
 		if (compare_env_vars(min->value, comp->value, error) > 0)
 			min = comp;
 		if (*error)
@@ -90,16 +112,12 @@ int	sort_env(t_env *exp)
 int	copy(t_env *env, t_env **exp)
 {
 	t_env	*new_node;
-	char	*value;
 
 	while (env)
 	{
-		value = ft_strdup(env->value);
-		if (!value)
-			return (0);
-		new_node = create_node(value);
+		new_node = create_node(env->value);
 		if (!new_node)
-			return (free(value), 0);
+			return (0);
 		add_back(exp, new_node);
 		env = env->next;
 	}
@@ -113,14 +131,14 @@ int	copy_sort(t_env *env, t_env **exp)
 	if (!copy(env, exp))
 		return (0);
 	if (*exp)
-		if (!sort_env(*exp))
-			return (0); // segfault here
+		if (!sort_env(*exp)) // segfault here
+			return (0);
 	/*tmp = *exp;
-	while (tmp)
-	{
-		printf("%s\n", tmp->value);
-		tmp = tmp->next;
-	}*/
+		while (tmp)
+		{
+			printf("%s\n", tmp->value);
+			tmp = tmp->next;
+		}*/
 	return (1);
 }
 
@@ -157,7 +175,7 @@ void	print_sorted_env(t_env *exp)
 	while (exp)
 	{
 		eq = ft_strchr(exp->value, '=');
-		if (eq)
+		if (eq && !(!ft_strcmp(exp->value, "_") && exp->value[ft_strlen(exp->value)] == '_'))
 		{
 			*eq = '\0';
 			printf("declare -x %s=\"%s\"\n", exp->value, eq + 1);
@@ -235,7 +253,7 @@ int	my_export(t_env **env, char **args)
 	{
 		if (!copy_sort(*env, &copy_env))
 			return (1);
-		return (print_sorted_env(copy_env), 0);
+		return (print_sorted_env(copy_env), free_env(copy_env), 0);
 	}
 	return (handle_export_args(env, args));
 }
