@@ -11,7 +11,6 @@ typedef struct s_redir
 {
 	int					type;
 	char				*target;
-	// char				*content;
 	struct s_redir		*next;
 }						t_redir;
 
@@ -36,9 +35,9 @@ typedef struct s_shell
 	t_command			*cmd;
 	t_redir				*red;
 	t_env				*env;
-	t_env				*exp_env;
+	t_env				*exp_env;//no need 
 	int					last_exit_status;
-	char *cwd; // unite at first
+	char *cwd; // inite at first
 }						t_shell;
 
 void					ft_putstr_fd(char *s, int fd);

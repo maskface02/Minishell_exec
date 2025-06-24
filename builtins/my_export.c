@@ -11,35 +11,15 @@
 /* ************************************************************************** */
 #include "../exec.h"
 
-char	*extract_var(char *str)
+int	compare_env_vars(char *s1, char *s2) // this function need norm
 {
-	char	*eq;
-	size_t	len;
-	char	*name;
+	char *eq1;
+	char *eq2;
+	int len2;
+	int len1;
+	int i;
+	int min_len;
 
-	eq = ft_strchr(str, '=');
-	if (eq)
-		len = eq - str;
-	else
-		len = ft_strlen(str);
-	name = ft_strndup(str, len); // and here
-	return (name);
-}
-
-int	compare_env_vars(char *s1, char *s2, int *error)
-{
-	char	*eq1;
-	char	*eq2;
-	size_t	len1;
-	size_t	len2;
-	size_t	min_len;
-	size_t	i;
-
-	if (!s1 || !s2)
-	{
-		*error = 1;
-		return (0);
-	}
 	eq1 = ft_strchr(s1, '=');
 	if (eq1)
 		len1 = eq1 - s1;
@@ -54,7 +34,7 @@ int	compare_env_vars(char *s1, char *s2, int *error)
 	if (len2 < min_len)
 		min_len = len2;
 	i = 0;
-	while (i < min_len)
+	while (i <= min_len)
 	{
 		if (s1[i] != s2[i])
 			return (s1[i] - s2[i]);
@@ -63,7 +43,7 @@ int	compare_env_vars(char *s1, char *s2, int *error)
 	return (0);
 }
 
-t_env	*find_min_node(t_env *current, int *error)
+t_env	*find_min_node(t_env *current)
 {
 	t_env	*min;
 	t_env	*comp;
@@ -75,10 +55,8 @@ t_env	*find_min_node(t_env *current, int *error)
 	while (comp)
 	{
 		++i;
-		if (compare_env_vars(min->value, comp->value, error) > 0)
+		if (compare_env_vars(min->value, comp->value) > 0)
 			min = comp;
-		if (*error)
-			break ;
 		comp = comp->next;
 	}
 	return (min);
@@ -90,14 +68,15 @@ int	sort_env(t_env *exp)
 	char	*swap;
 	t_env	*min;
 	int		error;
+	int		i;
 
+	i = 0;
 	current = exp;
 	error = 0;
 	while (current)
 	{
-		min = find_min_node(current, &error);
-		if (error)
-			return (0);
+		++i;
+		min = find_min_node(current);
 		if (min != current)
 		{
 			swap = current->value;
@@ -109,36 +88,23 @@ int	sort_env(t_env *exp)
 	return (1);
 }
 
-int	copy(t_env *env, t_env **exp)
+int	copy_sort(t_env *env, t_env **exp)
 {
 	t_env	*new_node;
+	int		i;
 
+	i = 0;
 	while (env)
 	{
+		++i;
 		new_node = create_node(env->value);
 		if (!new_node)
 			return (0);
 		add_back(exp, new_node);
 		env = env->next;
 	}
-	return (1);
-}
-
-int	copy_sort(t_env *env, t_env **exp)
-{
-	t_env	*tmp;
-
-	if (!copy(env, exp))
+	if (!sort_env(*exp))
 		return (0);
-	if (*exp)
-		if (!sort_env(*exp)) // segfault here
-			return (0);
-	/*tmp = *exp;
-		while (tmp)
-		{
-			printf("%s\n", tmp->value);
-			tmp = tmp->next;
-		}*/
 	return (1);
 }
 
@@ -171,18 +137,26 @@ t_env	*find_env_var(t_env *env, char *name)
 void	print_sorted_env(t_env *exp)
 {
 	char	*eq;
+	char	*us;
+	t_env	*node;
 
 	while (exp)
 	{
 		eq = ft_strchr(exp->value, '=');
-		if (eq && !(!ft_strcmp(exp->value, "_") && exp->value[ft_strlen(exp->value)] == '_'))
+		node = find_env_var(exp, "_");
+		if (node)
+			us = node->value;
+		if (ft_strcmp(exp->value, us))
 		{
-			*eq = '\0';
-			printf("declare -x %s=\"%s\"\n", exp->value, eq + 1);
-			*eq = '=';
+			if (eq)
+			{
+				*eq = '\0';
+				printf("declare -x %s=\"%s\"\n", exp->value, eq + 1);
+				*eq = '=';
+			}
+			else
+				printf("declare -x %s\n", exp->value);
 		}
-		else
-			printf("declare -x %s\n", exp->value);
 		exp = exp->next;
 	}
 }
@@ -198,37 +172,66 @@ int	create_new_node(t_env **env, char *arg)
 	return (1);
 }
 
-int	process_argument(t_env **env, char *arg)
+int	check_argument(char *arg, char **name, char **value, int *is_allocated)
 {
 	char	*eq;
-	char	*name;
-	int		ret;
-	t_env	*node;
 
 	eq = ft_strchr(arg, '=');
-	ret = 0;
+	*is_allocated = 0;
 	if (eq)
 	{
-		name = ft_strndup(arg, eq - arg);
-		if (!name)
-			return (1);
-	}
-	if (!valid_identifier(name))
-	{
-		ft_putstr_fd("export: `", 2);
-		ft_putstr_fd(arg, 2);
-		ft_putstr_fd("': not a valid identifier\n", 2);
-		return (free(name), 0);
+		*name = ft_strndup(arg, eq - arg);
+		if (!*name)
+			return (0);
+		*is_allocated = 1;
+		*value = eq + 1;
 	}
 	else
 	{
-		node = find_env_var(*env, name);
-		if (node)
-			(1) && (free(node->value), node->value = arg, ret = 1);
-		else
-			ret = create_new_node(env, arg);
+		*name = arg;
+		*value = NULL;
 	}
-	return (free(name), ret);
+	return (1);
+}
+
+void	cmd_error2(char *arg, char *name, int is_allocated)
+{
+	ft_putstr_fd("Minishell: export: `", 2);
+	ft_putstr_fd(arg, 2);
+	ft_putstr_fd("': not a valid identifier\n", 2);
+	if (is_allocated)
+		free(name);
+}
+
+int	update_env_var(t_env *node, char *value)
+{
+	if (node->value)
+		free(node->value);
+	node->value = value;
+	return (1);
+}
+
+int	process_argument(t_env **env, char *arg)
+{
+	char	*name;
+	char	*value;
+	int		is_allocated;
+	int		ret;
+	t_env	*node;
+
+	ret = 1;
+	if (!check_argument(arg, &name, &value, &is_allocated))
+		return (1);
+	if (!valid_identifier(name))
+		return (cmd_error2(arg, name, is_allocated), 0);
+	node = find_env_var(*env, name);
+	if (node && ft_strchr(arg, '='))
+		ret = update_env_var(node, ft_strchr(arg, '=') + 1);
+	else if (!node)
+		ret = create_new_node(env, arg);
+	if (is_allocated)
+		free(name);
+	return (ret);
 }
 
 int	handle_export_args(t_env **env, char **args)
@@ -257,17 +260,21 @@ int	my_export(t_env **env, char **args)
 	}
 	return (handle_export_args(env, args));
 }
-
+// hundel same args like export hello hello only export one
+// a segfault  in case export existing variable
 int	main(int ac, char **av, char **envp)
 {
 	t_shell	*shell;
 	t_env	*tmp;
+	char	*arg;
 
 	shell = malloc(sizeof(t_shell));
 	shell->env = NULL;
 	shell->exp_env = NULL;
 	copy_env(envp, &shell->env);
 	my_export(&shell->env, av + 1);
+	arg = NULL;
+	my_export(&shell->env, &arg);
 	/*tmp = shell->env;
 	while (tmp)
 	{
@@ -275,7 +282,7 @@ int	main(int ac, char **av, char **envp)
 		tmp = tmp->next;
 	}*/
 	free_env(shell->env);
-	free_env(shell->exp_env);
+	// free_env(shell->exp_env);
 	free(shell);
 	return (0);
 }

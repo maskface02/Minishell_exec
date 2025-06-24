@@ -1,39 +1,38 @@
-void sort_env(t_env **exp)
-{
-  t_env *tmp;
-  char *swp;
+#include "../exec.h"
 
-  tmp = *exp;
-  while (*exp)
-  {
-    if (ft_strcmp((*exp)->value, (*exp)->next->value) > 0)
-    {
-      swp = (*exp)->next->value;
-      (*exp)->next->value = (*exp)->value;
-      (*exp)->value = swp;
-      *exp = tmp;
-    }
-    else
-      (*exp) = (*exp)->next; 
-  }
-  *exp = tmp;
+int	compare_env_vars(char *s1, char *s2, int *error)
+{
+	char	*eq1;
+	char	*eq2;
+	int		len2;
+	int		len1;
+	int		i;
+	int		min_len;
+
+	eq1 = ft_strchr(s1, '=');
+	if (eq1)
+		len1 = eq1 - s1;
+	else
+		len1 = ft_strlen(s1);
+	eq2 = ft_strchr(s2, '=');
+	if (eq2)
+		len2 = eq2 - s2;
+	else
+		len2 = ft_strlen(s2);
+	min_len = len1;
+	if (len2 < min_len)
+		min_len = len2;
+	i = 0;
+	while (i <= min_len)
+	{
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		i++;
+	}
+	return (0);
 }
 
-int	copy_sort(t_env *env, t_env **exp)
+int main()
 {
-	t_env	*tmp;
-	t_env	*new_node;
-
-
-	tmp = env;
-	while (env)
-	{
-		new_node = create_node(env->value);
-		if (!new_node)
-			return (free_env(*exp), 0);
-		add_back(exp, new_node);
-		env = env->next;
-	}
-  sort_env(exp);
-	return (1);
+  int ok = compare_env_vars("LANG=en_US.UTF-8", "LANGUAGE=en", NULL);
 }
