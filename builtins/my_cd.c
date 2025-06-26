@@ -12,11 +12,20 @@
 
 #include "../exec.h"
 
+void set_var(t_shell *shell)
+{
+  t_env *node;
+  char *eq;
+
+  node = find_env_var(shell->env, "OLDPWD");
+  if ()
+}
+
 int	my_cd(t_shell *shell, char **args)
 {
 	char	*path;
 	char	*old_path;
-
+  char  *pwd;
 	old_path = getcwd(NULL, 0);
 	if (*args && *(args + 1))
 		return (cmd_error("cd", NULL, "too many arguments"), 1);
@@ -31,7 +40,8 @@ int	my_cd(t_shell *shell, char **args)
 	if (shell->cwd)
 		free(shell->cwd);
 	shell->cwd = getcwd(NULL, 0);
-	// set PWD var to cwd with export
+  set_var(shell, "PWD", "OLDPWD", old_path);
+  // set PWD var to cwd with export
 	// update the oldpwd to old_path if it exist in env
   // free old_path
 	return (0);

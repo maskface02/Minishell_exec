@@ -11,14 +11,14 @@
 /* ************************************************************************** */
 #include "../exec.h"
 
-int	compare_env_vars(char *s1, char *s2) // this function need norm
+int	compare_env_vars(char *s1, char *s2)// this function need norm
 {
-	char *eq1;
-	char *eq2;
-	int len2;
-	int len1;
-	int i;
-	int min_len;
+	char  *eq1;
+	char  *eq2;
+	int   len2;
+	int   len1;
+	int   i;
+  int   min_len;
 
 	eq1 = ft_strchr(s1, '=');
 	if (eq1)
@@ -155,7 +155,7 @@ void	print_sorted_env(t_env *exp)
 				*eq = '=';
 			}
 			else
-				printf("declare -x %s\n", exp->value);
+				printf("declare -x %s\n", exp->value); 
 		}
 		exp = exp->next;
 	}
@@ -203,14 +203,6 @@ void	cmd_error2(char *arg, char *name, int is_allocated)
 		free(name);
 }
 
-int	update_env_var(t_env *node, char *value)
-{
-	if (node->value)
-		free(node->value);
-	node->value = value;
-	return (1);
-}
-
 int	process_argument(t_env **env, char *arg)
 {
 	char	*name;
@@ -226,7 +218,10 @@ int	process_argument(t_env **env, char *arg)
 		return (cmd_error2(arg, name, is_allocated), 0);
 	node = find_env_var(*env, name);
 	if (node && ft_strchr(arg, '='))
-		ret = update_env_var(node, ft_strchr(arg, '=') + 1);
+	{
+		node->value = arg;
+		ret = 1;
+	}
 	else if (!node)
 		ret = create_new_node(env, arg);
 	if (is_allocated)
@@ -262,7 +257,7 @@ int	my_export(t_env **env, char **args)
 }
 // hundel same args like export hello hello only export one
 // a segfault  in case export existing variable
-int	main(int ac, char **av, char **envp)
+/*int	main(int ac, char **av, char **envp)
 {
 	t_shell	*shell;
 	t_env	*tmp;
@@ -275,14 +270,7 @@ int	main(int ac, char **av, char **envp)
 	my_export(&shell->env, av + 1);
 	arg = NULL;
 	my_export(&shell->env, &arg);
-	/*tmp = shell->env;
-	while (tmp)
-	{
-		printf("%s\n", tmp->value);
-		tmp = tmp->next;
-	}*/
 	free_env(shell->env);
-	// free_env(shell->exp_env);
 	free(shell);
 	return (0);
-}
+}*/

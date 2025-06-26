@@ -37,7 +37,7 @@ typedef struct s_shell
 	t_env				*env;
 	t_env				*exp_env;//no need 
 	int					last_exit_status;
-	char *cwd; // inite at first
+	char *cwd; // unite at first
 }						t_shell;
 
 void					ft_putstr_fd(char *s, int fd);
@@ -69,3 +69,4 @@ char					*ft_strchr(char *s, int c);
 int						ft_isalnum(int c);
 int						ft_isalpha(int c);
 int						my_env(t_env *env, char **args);
+t_env	*find_env_var(t_env *env, char *name);
