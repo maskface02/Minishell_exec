@@ -11,14 +11,14 @@
 /* ************************************************************************** */
 #include "../exec.h"
 
-int	compare_env_vars(char *s1, char *s2)// this function need norm
+int	compare_env_vars(char *s1, char *s2) // this function need norm
 {
-	char  *eq1;
-	char  *eq2;
-	int   len2;
-	int   len1;
-	int   i;
-  int   min_len;
+	char *eq1;
+	char *eq2;
+	int len2;
+	int len1;
+	int i;
+	int min_len;
 
 	eq1 = ft_strchr(s1, '=');
 	if (eq1)
@@ -137,26 +137,24 @@ t_env	*find_env_var(t_env *env, char *name)
 void	print_sorted_env(t_env *exp)
 {
 	char	*eq;
-	char	*us;
-	t_env	*node;
 
 	while (exp)
 	{
-		eq = ft_strchr(exp->value, '=');
-		node = find_env_var(exp, "_");
-		if (node)
-			us = node->value;
-		if (ft_strcmp(exp->value, us))
+		if (exp->value[0] == '_' && (exp->value[1] == '\0'
+				|| exp->value[1] == '='))
 		{
-			if (eq)
-			{
-				*eq = '\0';
-				printf("declare -x %s=\"%s\"\n", exp->value, eq + 1);
-				*eq = '=';
-			}
-			else
-				printf("declare -x %s\n", exp->value); 
+			exp = exp->next;
+			continue ;
 		}
+		eq = ft_strchr(exp->value, '=');
+		if (eq)
+		{
+			*eq = '\0';
+			printf("declare -x %s=\"%s\"\n", exp->value, eq + 1);
+			*eq = '=';
+		}
+		else
+			printf("declare -x %s\n", exp->value);
 		exp = exp->next;
 	}
 }
@@ -203,6 +201,18 @@ void	cmd_error2(char *arg, char *name, int is_allocated)
 		free(name);
 }
 
+int	update_env_var(t_env *node, char *new_value)
+{
+	char	*new;
+
+	new = ft_strdup(new_value);
+	if (!new)
+		return (0);
+	free(node->value);
+	node->value = new;
+	return (1);
+}
+
 int	process_argument(t_env **env, char *arg)
 {
 	char	*name;
@@ -218,10 +228,7 @@ int	process_argument(t_env **env, char *arg)
 		return (cmd_error2(arg, name, is_allocated), 0);
 	node = find_env_var(*env, name);
 	if (node && ft_strchr(arg, '='))
-	{
-		node->value = arg;
-		ret = 1;
-	}
+		ret = update_env_var(node, arg);
 	else if (!node)
 		ret = create_new_node(env, arg);
 	if (is_allocated)

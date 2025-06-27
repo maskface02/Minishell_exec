@@ -7,7 +7,7 @@ t_env	*create_node(char *envp)
 	env = malloc(sizeof(t_env));
 	if (!env)
 		return (NULL);
-	env->value = envp;
+	env->value = ft_strdup(envp);
 	env->next = NULL;
 	return (env);
 }
