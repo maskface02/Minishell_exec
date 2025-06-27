@@ -17,8 +17,6 @@ char *get_env_value(t_env *env, char *key)
     size_t key_len;
     char *val;
     
-    if (!env || !key)
-        return NULL;
     key_len = ft_strlen(key);
     while (env)
     {
@@ -69,8 +67,6 @@ char *create_export_arg(char *key, char *value)
     char *tmp;
     char *res;
     
-    if (!key || !value)
-        return NULL;
     tmp = ft_strjoin(key, "=");
     if (!tmp)
         return NULL;
@@ -85,8 +81,6 @@ int update_pwd_vars(t_shell *shell, char *oldpwd, char *new)
     char *pwd_arg;
     char *export_args[3];
     
-    if (!shell || !oldpwd || !new)
-        return 0;
     oldpwd_arg = create_export_arg("OLDPWD", oldpwd);
     if (!oldpwd_arg)
         return 0;
@@ -109,8 +103,6 @@ int update_shell_state(t_shell *shell, char *new_path, int debug)
 {
     char *new_cwd;
     
-    if (!shell || !new_path)
-        return 0;
     new_cwd = ft_strdup(new_path);
     if (!new_cwd)
         return 0;
@@ -130,7 +122,7 @@ int my_cd(t_shell *shell, char **args)
     int debug;
     int count;
     char *path;
-    char *newpwd;
+    char *new;
     int status;
     
     oldpwd = getcwd(NULL, 0);
@@ -159,20 +151,20 @@ int my_cd(t_shell *shell, char **args)
         free(oldpwd);
         return 1;
     }
-    newpwd = getcwd(NULL, 0);
-    if (!newpwd)
-        newpwd = ft_strdup(path);
-    if (!newpwd)
+    new = getcwd(NULL, 0);
+    if (!new)
+        new = ft_strdup(path);
+    if (!new)
     {
         free(oldpwd);
         return 1;
     }
     status = 0;
-    if (!update_pwd_vars(shell, oldpwd, newpwd))
+    if (!update_pwd_vars(shell, oldpwd, new))
         status = 1;
-    if (!update_shell_state(shell, newpwd, debug))
+    if (!update_shell_state(shell, new, debug))
         status = 1;
     free(oldpwd);
-    free(newpwd);
+    free(new);
     return status;
 }
