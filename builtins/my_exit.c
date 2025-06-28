@@ -45,9 +45,9 @@ int	exit_status(char *status, int *exit)
 
 void	exit_all(int status, t_shell *shell)
 {
-  // free allocated resources in shell struct
+	// free allocated resources in shell struct
 	free_env(shell->env);
-  free_cmd(shell->cmd);
+	free_cmd(shell->cmd);
 	free(shell);
 	exit(status);
 }

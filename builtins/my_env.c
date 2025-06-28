@@ -34,11 +34,11 @@ int	my_env(t_env *env, char **args)
 	tmp = env;
 	while (tmp)
 	{
-    if (ft_strchr(tmp->value, "="))
-    {
-      printf("%s \n", tmp->value);
-      tmp = tmp->next;
-    }
+		if (ft_strchr(tmp->value, "="))
+		{
+			printf("%s \n", tmp->value);
+			tmp = tmp->next;
+		}
 	}
 	return (0);
 }

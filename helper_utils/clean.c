@@ -1,15 +1,15 @@
 #include "../exec.h"
 
-void free_cmd(t_command *cmd)
+void	free_cmd(t_command *cmd)
 {
-  t_command *tmp;
+	t_command	*tmp;
 
-  while (cmd)
-  {
-    tmp = cmd;
-    cmd = cmd->next;
-    free(tmp);
-  }
+	while (cmd)
+	{
+		tmp = cmd;
+		cmd = cmd->next;
+		free(tmp);
+	}
 }
 
 void	free_env(t_env *env)
@@ -20,9 +20,7 @@ void	free_env(t_env *env)
 	{
 		tmp = env;
 		env = env->next;
-    free(tmp->value);
+		free(tmp->value);
 		free(tmp);
 	}
 }
-
-

@@ -36,8 +36,8 @@ int	ft_strcmp(char *s1, char *s2)
 
 char	*ft_strndup(char *s, size_t n)
 {
-	char			*res;
-	int	i;
+	char	*res;
+	int		i;
 
 	i = 0;
 	res = malloc(sizeof(n + 1));
@@ -74,7 +74,6 @@ int	ft_isalnum(int c)
 		return (1);
 	return (0);
 }
-
 
 int	ft_isalpha(int c)
 {

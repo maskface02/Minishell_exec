@@ -14,8 +14,7 @@
 
 void	free_and_update(t_env **prev, t_env **current, t_env **env)
 {
-	t_env	*temp;//?
-
+	t_env *temp; //?
 	temp = *current;
 	if (!*prev)
 	{
