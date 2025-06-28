@@ -71,3 +71,4 @@ int						ft_isalpha(int c);
 int						my_env(t_env *env, char **args);
 t_env					*find_env_var(t_env *env, char *name);
 int						my_export(t_env **env, char **args);
+int						my_cd(t_shell *shell, char **args);

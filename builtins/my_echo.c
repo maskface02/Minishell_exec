@@ -16,6 +16,7 @@ void	print_args(char **args, int flag, int start, int spaces)
 {
 	while (args[start])
 	{
+    //add skip spaces !! before printing
 		ft_putstr_fd(args[start], 1);
 		if (spaces--)
 			write(1, " ", 1);
