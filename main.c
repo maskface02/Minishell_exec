@@ -22,6 +22,21 @@ int	execute_builtin(t_shell *shell, t_command *cmd)
 	return (ret);
 }
 
+int	is_builtin(char *cmd)
+{
+	if (!ft_strcmp(cmd, "exit") || !ft_strcmp(cmd, "unset") || !ft_strcmp(cmd,
+			"env") || !ft_strcmp(cmd, "export") || !ft_strcmp(cmd, "cd")
+		|| !ft_strcmp(cmd, "pwd") || !ft_strcmp(cmd, "echo"))
+		return (1);
+	return (0);
+}
+
+void	start_exec(t_shell *shell)
+{
+	if (is_builtin(shell->cmd->args[0]))
+		shell->last_exit = execute_builtin(shell, shell->cmd);
+}
+
 int	main(int ac, char **av, char **env)
 {
 	t_shell	shell;
@@ -31,14 +46,15 @@ int	main(int ac, char **av, char **env)
 	(void)env;
 	while (1337)
 	{
-    memset(&shell, 0, sizeof(t_shell));
+		memset(&shell, 0, sizeof(t_shell));
 		shell.r_line = readline("Minishell  > ");
 		if (shell.r_line == NULL)
 			exit(0);
 		if (ft_strlen(shell.r_line) != 0)
 		{
 			add_history(shell.r_line);
-      start_exec(shell);
+			start_exec(&shell);
+			pritnf("exit status : %d", shell.last_exit_status);
 		}
 	}
 }

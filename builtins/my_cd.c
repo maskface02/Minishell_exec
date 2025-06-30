@@ -129,8 +129,8 @@ int	my_cd(t_shell *shell, char **args)
     free(shell->cwd);
     shell->cwd = ft_strjoin(tmp, args[0]);
     if (!shell->cwd)
-      return (free(tmp), 1);
-		return (1);
+      free(tmp);
+		return (free(tmp), 1);
 	}
 	count = count_arguments(args);
 	if (count > 1)
@@ -168,19 +168,26 @@ int	my_cd(t_shell *shell, char **args)
 	free(new);
 	return (status);
 }
-
+/*
 int	main(int ac, char **av, char **envp)
 {
 	t_shell	*shell;
 	char	**args;
 
 	shell = malloc(sizeof(t_shell));
+  shell->env = NULL;
 	shell->cwd = getcwd(NULL, 0);
 	copy_env(envp, &shell->env);
 	args = malloc(16);
-	args[0] = "unset";
-	args[1] = "HOME";
+	args[0] = "a/b/c/d";
+	args[1] = NULL;
 	//	my_unset(&shell->env, args + 1);
+  my_cd(shell, &args[0]);
 	my_cd(shell, &av[1]);
 	my_pwd(shell);
-}
+  free(args);
+ 
+ free_env(shell->env);
+  free(shell->cwd);
+  free(shell);
+}*/

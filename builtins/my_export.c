@@ -252,12 +252,18 @@ int	handle_export_args(t_env **env, char **args)
 int	my_export(t_env **env, char **args)
 {
 	t_env	*copy_env;
+  t_env *oldpwd;
+  char  *var;
 
 	copy_env = NULL;
+  var = "OLDPWD";
 	if (!args || !args[0])
 	{
 		if (!copy_sort(*env, &copy_env))
 			return (1);
+    oldpwd = find_env_var(*env, "OLDPWD");
+    if (!oldpwd)
+      export(env, &var);//need test in new launched bash terminal
 		return (print_sorted_env(copy_env), free_env(copy_env), 0);
 	}
 	return (handle_export_args(env, args));

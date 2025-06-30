@@ -17,7 +17,7 @@ int	my_pwd(t_shell *shell)
 	char	buff[4096];
 
 	if (!getcwd(buff, sizeof(buff)))
-		return (ft_putendl_fd(shell->cwd, sizeof(shell->cwd)), 0);
+		return (ft_putendl_fd(shell->cwd, 1), 0);
 	return (ft_putendl_fd(buff, 1), 0);
 }
 
