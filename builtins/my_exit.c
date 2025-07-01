@@ -14,9 +14,7 @@
 
 int	is_alone(t_command *cmd)
 {
-	if (cmd->next)
-		return (0);
-	return (1);
+    return (!cmd->next);
 }
 
 int	exit_status(char *status, int *exit)
@@ -50,6 +48,7 @@ void	exit_all(int status, t_shell *shell)
 	free_cmd(shell->cmd);
 	free(shell);
 	exit(status);
+  // still need update
 }
 
 int	my_exit(char **args, t_shell *shell)

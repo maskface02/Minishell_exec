@@ -79,6 +79,7 @@ int	update_pwd_vars(t_shell *shell, char *oldpwd, char *new)
 	char	*oldpwd_arg;
 	char	*pwd_arg;
 	char	*export_args[3];
+  int exp_ret;
 
 	oldpwd_arg = create_export_arg("OLDPWD", oldpwd);
 	if (!oldpwd_arg)
@@ -92,13 +93,13 @@ int	update_pwd_vars(t_shell *shell, char *oldpwd, char *new)
 	export_args[0] = oldpwd_arg;
 	export_args[1] = pwd_arg;
 	export_args[2] = NULL;
-	my_export(&shell->env, export_args);
+	exp_ret = my_export(&shell->env, export_args);
 	free(oldpwd_arg);
 	free(pwd_arg);
-	return (1);
+	return (!exp_ret);
 }
 
-int	update_shell_state(t_shell *shell, char *new_path)
+int	update_cwd(t_shell *shell, char *new_path)
 {
 	char	*new_cwd;
 
@@ -113,27 +114,28 @@ int	update_shell_state(t_shell *shell, char *new_path)
 int	my_cd(t_shell *shell, char **args)
 {
 	char	*oldpwd;
-	int		count;
 	char	*path;
 	char	*new;
 	int		status;
-  char *tmp;
+	char	*tmp;
+	int		print;
+
 	oldpwd = getcwd(NULL, 0);
 	if (!oldpwd)
 	{
-		cmd_error("cd","error retrieving current directory: getcwd: cannot access parent directories",
+		cmd_error("cd",
+			"error retrieving current directory: getcwd: cannot access parent directories",
 			strerror(errno));
-    tmp = ft_strjoin(shell->cwd, "/");
-    if (!tmp)
-      return (1);
-    free(shell->cwd);
-    shell->cwd = ft_strjoin(tmp, args[0]);
-    if (!shell->cwd)
-      free(tmp);
+		tmp = ft_strjoin(shell->cwd, "/");
+		if (!tmp)
+			return (1);
+		free(shell->cwd);
+		shell->cwd = ft_strjoin(tmp, args[0]);
+		if (!shell->cwd)
+			free(tmp);
 		return (free(tmp), 1);
 	}
-	count = count_arguments(args);
-	if (count > 1)
+	if (count_arguments(args) > 1)
 	{
 		cmd_error("cd", NULL, "too many arguments");
 		free(oldpwd);
@@ -145,6 +147,8 @@ int	my_cd(t_shell *shell, char **args)
 		free(oldpwd);
 		return (1);
 	}
+	if (!ft_strcmp(args[0], "-"))
+		print = 1;
 	if (chdir(path))
 	{
 		cmd_error("cd", path, strerror(errno));
@@ -159,10 +163,12 @@ int	my_cd(t_shell *shell, char **args)
 		free(oldpwd);
 		return (1);
 	}
+	if (print)
+		ft_putendl_fd(new, 2);
 	status = 0;
 	if (!update_pwd_vars(shell, oldpwd, new))
 		status = 1;
-	if (!update_shell_state(shell, new))
+	if (!update_cwd(shell, new))
 		status = 1;
 	free(oldpwd);
 	free(new);
@@ -186,7 +192,7 @@ int	main(int ac, char **av, char **envp)
 	my_cd(shell, &av[1]);
 	my_pwd(shell);
   free(args);
- 
+
  free_env(shell->env);
   free(shell->cwd);
   free(shell);

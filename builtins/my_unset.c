@@ -14,7 +14,8 @@
 
 void	free_and_update(t_env **prev, t_env **current, t_env **env)
 {
-	t_env *temp;
+	t_env	*temp;
+
 	temp = *current;
 	if (!*prev)
 	{
@@ -26,25 +27,28 @@ void	free_and_update(t_env **prev, t_env **current, t_env **env)
 		(*prev)->next = temp->next;
 		*current = (*prev)->next;
 	}
+	free(temp->value);
 	free(temp);
 }
-
+// still need a check for unset invalid arg like 45hello or !hello
 int	my_unset(t_env **env, char **args)
 {
 	int		i;
 	t_env	*current;
 	t_env	*prev;
 
-	if (!*args)
-		return (1);
+	if (!args || !*args)
+		return (0);
 	i = -1;
 	while (args[++i])
 	{
-		(1) && (current = *env, prev = NULL);
+		current = *env;
+    prev = NULL;
 		while (current)
 		{
 			if (!ft_strncmp(current->value, args[i], ft_strlen(args[i]))
-				&& current->value[ft_strlen(args[i])] == '=')
+				&& current->value[ft_strlen(args[i])] == '='
+				|| current->value[ft_strlen(args[i])] == '\0')
 				free_and_update(&prev, &current, env);
 			else
 				(1) && (prev = current, current = current->next);

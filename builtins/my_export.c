@@ -11,50 +11,47 @@
 /* ************************************************************************** */
 #include "../exec.h"
 
-int	compare_env_vars(char *s1, char *s2) // this function need norm
+size_t	get_len(char *str)
 {
-	char *eq1;
-	char *eq2;
-	int len2;
-	int len1;
-	int i;
-	int min_len;
+	char	*eq;
+	size_t	len;
 
-	eq1 = ft_strchr(s1, '=');
-	if (eq1)
-		len1 = eq1 - s1;
+	eq = ft_strchr(str, '=');
+	if (eq)
+		len = eq - str;
 	else
-		len1 = ft_strlen(s1);
-	eq2 = ft_strchr(s2, '=');
-	if (eq2)
-		len2 = eq2 - s2;
+		len = ft_strlen(str);
+	return (len);
+}
+
+int	compare_env_vars(char *s1, char *s2)
+{
+	size_t	len1;
+	size_t	len2;
+	size_t	min_len;
+	int		cmp;
+
+	len1 = get_len(s1);
+	len2 = get_len(s2);
+	if (len1 < len2)
+		min_len = len1;
 	else
-		len2 = ft_strlen(s2);
-	min_len = len1;
-	if (len2 < min_len)
 		min_len = len2;
-	i = 0;
-	while (i <= min_len)
-	{
-		if (s1[i] != s2[i])
-			return (s1[i] - s2[i]);
-		i++;
-	}
-	return (0);
+	cmp = ft_strncmp(s1, s2, min_len);
+	if (!cmp)
+		return (cmp);
+	return (1);
 }
 
 t_env	*find_min_node(t_env *current)
 {
 	t_env	*min;
 	t_env	*comp;
-	int		i;
 
 	min = current;
 	comp = current->next;
-	i = 0;
 	while (comp)
 	{
-		++i;
 		if (compare_env_vars(min->value, comp->value) > 0)
 			min = comp;
 		comp = comp->next;
@@ -67,15 +64,10 @@ int	sort_env(t_env *exp)
 	t_env	*current;
 	char	*swap;
 	t_env	*min;
-	int		error;
-	int		i;
 
-	i = 0;
 	current = exp;
-	error = 0;
 	while (current)
 	{
-		++i;
 		min = find_min_node(current);
 		if (min != current)
 		{
@@ -91,15 +83,12 @@ int	sort_env(t_env *exp)
 int	copy_sort(t_env *env, t_env **exp)
 {
 	t_env	*new_node;
-	int		i;
 
-	i = 0;
 	while (env)
 	{
-		++i;
 		new_node = create_node(env->value);
-		if (!new_node)
-			return (0);
+		if (!new_node || !new_node->value)
+			return (free(new_node), 0);
 		add_back(exp, new_node);
 		env = env->next;
 	}
@@ -112,12 +101,12 @@ int	valid_identifier(char *name)
 {
 	if (!ft_isalpha(*name) && *name != '_')
 		return (0);
-	name++;
-	while (*name)
+	//	name++;
+	while (*++name) // test if it works
 	{
 		if (!ft_isalnum(*name) && *name != '_')
 			return (0);
-		name++;
+		// name++;
 	}
 	return (1);
 }
@@ -127,7 +116,8 @@ t_env	*find_env_var(t_env *env, char *name)
 	while (env)
 	{
 		if (!ft_strncmp(env->value, name, ft_strlen(name))
-			&& env->value[ft_strlen(name)] == '=')
+			&& (env->value[ft_strlen(name)] == '='
+				|| env->value[ft_strlen(name)] == '\0'))
 			return (env);
 		env = env->next;
 	}
@@ -252,18 +242,13 @@ int	handle_export_args(t_env **env, char **args)
 int	my_export(t_env **env, char **args)
 {
 	t_env	*copy_env;
-  t_env *oldpwd;
-  char  *var;
+	t_env	*oldpwd;
 
 	copy_env = NULL;
-  var = "OLDPWD";
 	if (!args || !args[0])
 	{
 		if (!copy_sort(*env, &copy_env))
 			return (1);
-    oldpwd = find_env_var(*env, "OLDPWD");
-    if (!oldpwd)
-      export(env, &var);//need test in new launched bash terminal
 		return (print_sorted_env(copy_env), free_env(copy_env), 0);
 	}
 	return (handle_export_args(env, args));
