@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 #include "../exec.h"
 
-size_t	get_len(char *str)
+/*size_t	get_len(char *str)
 {
 	char	*eq;
 	size_t	len;
@@ -41,7 +41,40 @@ int	compare_env_vars(char *s1, char *s2)
 	if (!cmp)
 		return (cmp);
 	return (1);
+}*/
+
+int	compare_env_vars(char *s1, char *s2) // this function need norm
+{
+	char *eq1;
+	char *eq2;
+	int len2;
+	int len1;
+	int i;
+	int min_len;
+
+	eq1 = ft_strchr(s1, '=');
+	if (eq1)
+		len1 = eq1 - s1;
+	else
+		len1 = ft_strlen(s1);
+	eq2 = ft_strchr(s2, '=');
+	if (eq2)
+		len2 = eq2 - s2;
+	else
+		len2 = ft_strlen(s2);
+	min_len = len1;
+	if (len2 < min_len)
+		min_len = len2;
+	i = 0;
+	while (i <= min_len)
+	{
+		if (s1[i] != s2[i])
+			return (s1[i] - s2[i]);
+		i++;
+	}
+	return (0);
 }
+
 
 t_env	*find_min_node(t_env *current)
 {
@@ -127,9 +160,10 @@ t_env	*find_env_var(t_env *env, char *name)
 void	print_sorted_env(t_env *exp)
 {
 	char	*eq;
-
+  int i =0;
 	while (exp)
 	{
+    ++i;
 		if (exp->value[0] == '_' && (exp->value[1] == '\0'
 				|| exp->value[1] == '='))
 		{
@@ -147,6 +181,7 @@ void	print_sorted_env(t_env *exp)
 			printf("declare -x %s\n", exp->value);
 		exp = exp->next;
 	}
+  printf("%d\n", i);
 }
 
 int	create_new_node(t_env **env, char *arg)
@@ -242,7 +277,6 @@ int	handle_export_args(t_env **env, char **args)
 int	my_export(t_env **env, char **args)
 {
 	t_env	*copy_env;
-	t_env	*oldpwd;
 
 	copy_env = NULL;
 	if (!args || !args[0])

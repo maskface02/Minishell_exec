@@ -47,8 +47,8 @@ int	my_unset(t_env **env, char **args)
 		while (current)
 		{
 			if (!ft_strncmp(current->value, args[i], ft_strlen(args[i]))
-				&& current->value[ft_strlen(args[i])] == '='
-				|| current->value[ft_strlen(args[i])] == '\0')
+				&& (current->value[ft_strlen(args[i])] == '='
+				|| current->value[ft_strlen(args[i])] == '\0'))
 				free_and_update(&prev, &current, env);
 			else
 				(1) && (prev = current, current = current->next);

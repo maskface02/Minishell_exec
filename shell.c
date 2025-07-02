@@ -360,7 +360,7 @@ void	cleanup_heredocs(t_shell *shell)
 }
 
 // Example main function
-int	main(int ac, char **av, char **env)
+/*int	main(int ac, char **av, char **env)
 {
 	t_shell	shell;
 	char	*prompt;
@@ -390,4 +390,4 @@ int	main(int ac, char **av, char **env)
 		shell.cmd = NULL;
 	}
 	return (0);
-}
+}*/

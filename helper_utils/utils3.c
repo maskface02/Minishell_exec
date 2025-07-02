@@ -27,7 +27,8 @@ int	ft_strncmp(char *s1, char *s2, size_t n)
 int	ft_strcmp(char *s1, char *s2)
 {
 	int	i;
-
+  if (!s1 || !s2)
+    return (0);
 	i = 0;
 	while ((s1[i] == s2[i]) && s1[i] && s2[i])
 		i++;
@@ -37,7 +38,7 @@ int	ft_strcmp(char *s1, char *s2)
 char	*ft_strndup(char *s, size_t n)
 {
 	char	*res;
-	int		i;
+	size_t	i;
 
 	i = 0;
 	res = malloc(sizeof(n + 1));

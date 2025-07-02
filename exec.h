@@ -1,5 +1,7 @@
 #include <errno.h>
 #include <limits.h>
+#include <readline/history.h>
+#include <readline/readline.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -40,6 +42,7 @@ typedef struct s_shell
 	char *cwd; // unite at first
 }						t_shell;
 
+size_t					ft_strlen(char *s);
 void					ft_putstr_fd(char *s, int fd);
 int						my_echo(char **args);
 void					ft_putendl_fd(char *s, int fd);
@@ -72,3 +75,4 @@ int						my_env(t_env *env, char **args);
 t_env					*find_env_var(t_env *env, char *name);
 int						my_export(t_env **env, char **args);
 int						my_cd(t_shell *shell, char **args);
+char					**ft_split(char const *s, char c);

@@ -120,6 +120,8 @@ int	my_cd(t_shell *shell, char **args)
 	char	*tmp;
 	int		print;
 
+
+  print = 0;
 	oldpwd = getcwd(NULL, 0);
 	if (!oldpwd)
 	{

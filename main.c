@@ -34,27 +34,30 @@ int	is_builtin(char *cmd)
 void	start_exec(t_shell *shell)
 {
 	if (is_builtin(shell->cmd->args[0]))
-		shell->last_exit = execute_builtin(shell, shell->cmd);
+		shell->last_exit_status = execute_builtin(shell, shell->cmd);
 }
 
-int	main(int ac, char **av, char **env)
+int	main(int ac, char **av, char **envp)
 {
 	t_shell	shell;
 
 	(void)ac;
 	(void)av;
-	(void)env;
+
+	memset(&shell, 0, sizeof(t_shell));
+	copy_env(envp, &shell.env);
 	while (1337)
 	{
-		memset(&shell, 0, sizeof(t_shell));
 		shell.r_line = readline("Minishell  > ");
 		if (shell.r_line == NULL)
 			exit(0);
-		if (ft_strlen(shell.r_line) != 0)
+		shell.cmd = malloc(sizeof(t_command));
+		shell.cmd->args = ft_split(shell.r_line, ' ');
+		if (ft_strlen(shell.r_line))
 		{
 			add_history(shell.r_line);
 			start_exec(&shell);
-			pritnf("exit status : %d", shell.last_exit_status);
+			printf("exit status : %d \n", shell.last_exit_status);
 		}
 	}
 }

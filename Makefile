@@ -1,5 +1,5 @@
-SRC_DIRS = Minishell_exec/builtins Minishell_exec/helper_utils
-SRCS = main.c $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
+SRC_DIRS = builtins helper_utils
+SRCS = main.c ft_split.c $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 OBJS = $(SRCS:.c=.o)
 NAME = minishell_exec
 CC = cc -g

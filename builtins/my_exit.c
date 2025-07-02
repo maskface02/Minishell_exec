@@ -19,7 +19,6 @@ int	is_alone(t_command *cmd)
 
 int	exit_status(char *status, int *exit)
 {
-	int		ret;
 	long	converted;
 	int		overflow;
 	int		i;
