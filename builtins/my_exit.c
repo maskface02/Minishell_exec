@@ -42,10 +42,12 @@ int	exit_status(char *status, int *exit)
 
 void	exit_all(int status, t_shell *shell)
 {
-	// free allocated resources in shell struct
-	free_env(shell->env);
+
+  (void)shell;
+  // free allocated resources in shell struct
+	/*free_env(shell->env);
 	free_cmd(shell->cmd);
-	free(shell);
+	free(shell);*/
 	exit(status);
   // still need update
 }
@@ -60,7 +62,8 @@ int	my_exit(char **args, t_shell *shell)
 		ft_putendl_fd("exit", 2);
 	n = args_counter(args);
 	if (!n)
-		return (0);
+		return ( exit(0), 0);// still need edit !!leaks just for testing
+  // now
 	error = exit_status(args[0], &status);
 	if (error)
 		return (cmd_error("exit", args[0], "numeric argument required"), 2);
