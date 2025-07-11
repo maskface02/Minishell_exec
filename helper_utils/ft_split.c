@@ -1,4 +1,4 @@
-#include "exec.h"
+#include "../exec.h"
 
 static	int	w_counter(char const *s, char c)
 {

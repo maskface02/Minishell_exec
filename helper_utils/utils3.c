@@ -35,7 +35,7 @@ int	ft_strcmp(char *s1, char *s2)
 	return (s1[i] - s2[i]);
 }
 
-char	*ft_strndup(char *s, size_t n)
+/*char	*ft_strndup(char *s, size_t n)
 {
 	char	*res;
 	size_t	i;
@@ -51,7 +51,7 @@ char	*ft_strndup(char *s, size_t n)
 	}
 	res[i] = '\0';
 	return (res);
-}
+}*/
 
 char	*ft_strchr(char *s, int c)
 {

@@ -10,6 +10,7 @@
 /*                                                                            */
 /* ************************************************************************** */
 #include "../exec.h"
+#include <threads.h>
 
 /*size_t	get_len(char *str)
 {
@@ -30,6 +31,12 @@ int	compare_env_vars(char *s1, char *s2)
 	size_t	len2;
 	size_t	min_len;
 	int		cmp;
+	char	*eq1;
+	char	*eq2;
+	int		len2;
+	int		len1;
+	int		i;
+	int		min_len;
 
 	len1 = get_len(s1);
 	len2 = get_len(s2);
@@ -42,7 +49,6 @@ int	compare_env_vars(char *s1, char *s2)
 		return (cmp);
 	return (1);
 }*/
-
 int	compare_env_vars(char *s1, char *s2) // this function need norm
 {
 	char *eq1;
@@ -74,7 +80,6 @@ int	compare_env_vars(char *s1, char *s2) // this function need norm
 	}
 	return (0);
 }
-
 
 t_env	*find_min_node(t_env *current)
 {
@@ -113,33 +118,27 @@ int	sort_env(t_env *exp)
 	return (1);
 }
 
-int	copy_sort(t_env *env, t_env **exp)
+int	copy_sort(t_env *env, t_env **exp, t_gc_node **gc)
 {
 	t_env	*new_node;
 
 	while (env)
 	{
-		new_node = create_node(env->value);
-		if (!new_node || !new_node->value)
-			return (free(new_node), 0);
+		new_node = create_node(env->value, gc);
 		add_back(exp, new_node);
 		env = env->next;
 	}
-	if (!sort_env(*exp))
-		return (0);
-	return (1);
+	return (sort_env(*exp));
 }
 
 int	valid_identifier(char *name)
 {
 	if (!ft_isalpha(*name) && *name != '_')
 		return (0);
-	//	name++;
-	while (*++name) // test if it works
+	while (*++name)
 	{
 		if (!ft_isalnum(*name) && *name != '_')
 			return (0);
-		// name++;
 	}
 	return (1);
 }
@@ -160,10 +159,12 @@ t_env	*find_env_var(t_env *env, char *name)
 void	print_sorted_env(t_env *exp)
 {
 	char	*eq;
-  int i =0;
+	int		i;
+
+	i = 0;
 	while (exp)
 	{
-    ++i;
+		++i;
 		if (exp->value[0] == '_' && (exp->value[1] == '\0'
 				|| exp->value[1] == '='))
 		{
@@ -181,16 +182,14 @@ void	print_sorted_env(t_env *exp)
 			printf("declare -x %s\n", exp->value);
 		exp = exp->next;
 	}
-  printf("%d\n", i);
+	printf("%d\n", i);
 }
 
-int	create_new_node(t_env **env, char *arg)
+int	create_new_node(t_env **env, char *arg, t_gc_node **gc)
 {
 	t_env	*new_node;
 
-	new_node = create_node(arg);
-	if (!new_node)
-		return (0);
+	new_node = create_node(arg, gc);
 	add_back(env, new_node);
 	return (1);
 }
@@ -226,11 +225,11 @@ void	cmd_error2(char *arg, char *name, int is_allocated)
 		free(name);
 }
 
-int	update_env_var(t_env *node, char *new_value)
+int	update_env_var(t_env *node, char *new_value, t_gc_node **gc)
 {
 	char	*new;
 
-	new = ft_strdup(new_value);
+	new = ft_strdup(new_value, gc);
 	if (!new)
 		return (0);
 	free(node->value);
@@ -238,7 +237,7 @@ int	update_env_var(t_env *node, char *new_value)
 	return (1);
 }
 
-int	process_argument(t_env **env, char *arg)
+int	process_argument(t_env **env, char *arg, t_gc_node **gc)
 {
 	char	*name;
 	char	*value;
@@ -253,15 +252,15 @@ int	process_argument(t_env **env, char *arg)
 		return (cmd_error2(arg, name, is_allocated), 0);
 	node = find_env_var(*env, name);
 	if (node && ft_strchr(arg, '='))
-		ret = update_env_var(node, arg);
+		ret = update_env_var(node, arg, gc);
 	else if (!node)
-		ret = create_new_node(env, arg);
+		ret = create_new_node(env, arg, gc);
 	if (is_allocated)
 		free(name);
 	return (ret);
 }
 
-int	handle_export_args(t_env **env, char **args)
+int	handle_export_args(t_env **env, char **args, t_gc_node **gc)
 {
 	int	ret;
 	int	i;
@@ -269,23 +268,30 @@ int	handle_export_args(t_env **env, char **args)
 	ret = 0;
 	i = -1;
 	while (args[++i])
-		if (!process_argument(env, args[i]))
+		if (!process_argument(env, args[i], gc))
 			ret = 1;
 	return (ret);
 }
 
-int	my_export(t_env **env, char **args)
+int	my_export(t_env **env, char **args, t_gc_node **gc)
 {
-	t_env	*copy_env;
+	t_env		*copy_env;
+	t_gc_node	*temp_gc;
 
-	copy_env = NULL;
 	if (!args || !args[0])
 	{
-		if (!copy_sort(*env, &copy_env))
+		temp_gc = NULL;
+		copy_env = NULL;
+		if (!copy_sort(*env, &copy_env, &temp_gc))
+		{
+			gc_clean(&temp_gc);
 			return (1);
-		return (print_sorted_env(copy_env), free_env(copy_env), 0);
+		}
+		print_sorted_env(copy_env);
+		gc_clean(&temp_gc);
+		return (0);
 	}
-	return (handle_export_args(env, args));
+	return (handle_export_args(env, args, gc));
 }
 // hundel same args like export hello hello only export one
 // a segfault  in case export existing variable

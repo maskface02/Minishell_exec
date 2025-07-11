@@ -62,7 +62,10 @@ int	my_exit(char **args, t_shell *shell)
 	if (n > 1)
 		return (cmd_error("exit", NULL, "too many arguments"), 1);
 	if (!shell->cmd->next)
-		exit_all(status, shell);
+  {
+    gc_clean(&shell->gc);
+    exit(status);
+  }
 	return (status);
 }
 

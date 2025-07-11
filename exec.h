@@ -1,4 +1,5 @@
 #include <errno.h>
+#include <fcntl.h>
 #include <limits.h>
 #include <stdio.h>
 #include <readline/history.h>
@@ -6,7 +7,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 
 #define PROMPT "minishell"
 
@@ -15,12 +15,17 @@
 #define REDIR_APPEND 3
 #define REDIR_HEREDOC 4
 
+typedef struct s_gc_node
+{
+	void				*ptr;
+	struct s_gc_node	*next;
+}						t_gc_node;
 
 typedef struct s_redir
 {
 	int					type;
 	char				*target;
-	char				*heredoc_file_name;// heredoc name to open it in the execution phase
+	char *heredoc_file_name; // heredoc name to open it in the execution phase
 	struct s_redir		*next;
 }						t_redir;
 
@@ -48,6 +53,7 @@ typedef struct s_shell
 	t_env *exp_env; // no need
 	int					last_exit_status;
 	char *cwd; // unite at first
+	t_gc_node			*gc;
 }						t_shell;
 
 size_t					ft_strlen(char *s);
@@ -59,13 +65,11 @@ void					cmd_error(char *cmd_name, char *error_arg,
 int						args_counter(char **args);
 long					ft_atol(char *arg, int *overflow);
 int						is_space(char c);
-char					*ft_strdup(char *s);
 int						ft_strncmp(char *s1, char *s2, size_t n);
 size_t					ft_strlen(char *s);
-int						copy_env(char **envp, t_env **env);
-t_env					*create_node(char *envp);
+int						copy_env(char **envp, t_env **env, t_gc_node **gc);
 t_env					*last_node(t_env *node);
-int						add_back(t_env **env, t_env *new);
+void					add_back(t_env **env, t_env *new);
 void					free_env(t_env *env);
 void					free_cmd(t_command *cmd);
 int						my_echo(char **args);
@@ -74,13 +78,20 @@ int						my_exit(char **args, t_shell *shell);
 int						my_unset(t_env **env, char **args);
 int						is_var_exist(t_env *env, char *var);
 int						ft_strcmp(char *s1, char *s2);
-char					*ft_strjoin(char *s1, char *s2);
+// char					*ft_strjoin(char *s1, char *s2);
 char					*ft_strndup(char *s, size_t n);
 char					*ft_strchr(char *s, int c);
 int						ft_isalnum(int c);
 int						ft_isalpha(int c);
 int						my_env(t_env *env, char **args);
 t_env					*find_env_var(t_env *env, char *name);
-int						my_export(t_env **env, char **args);
 int						my_cd(t_shell *shell, char **args);
 char					**ft_split(char const *s, char c);
+int	my_export(t_env **env, char **args, t_gc_node **gc);
+char					*ft_strdup(char *s, t_gc_node **gc);
+void					*gc_malloc(t_gc_node **gc, size_t size);
+void					gc_clean(t_gc_node **gc);
+void	gc_remove(t_gc_node **gc, void *ptr);
+void					gc_add(t_gc_node **gc, void *ptr);
+char					*ft_strjoin(char *s1, char *s2, t_gc_node **gc);
+t_env					*create_node(char *envp, t_gc_node **gc);

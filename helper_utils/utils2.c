@@ -1,13 +1,11 @@
 #include "../exec.h"
 
-t_env	*create_node(char *envp)
+t_env	*create_node(char *envp, t_gc_node **gc)
 {
 	t_env	*env;
 
-	env = malloc(sizeof(t_env));
-	if (!env)
-		return (NULL);
-	env->value = ft_strdup(envp);
+	env = gc_malloc(gc, sizeof(t_env));
+	env->value = ft_strdup(envp, gc);
 	env->next = NULL;
 	return (env);
 }
@@ -19,23 +17,23 @@ t_env	*last_node(t_env *node)
 	return (node);
 }
 
-int	add_back(t_env **env, t_env *new)
+void	add_back(t_env **env, t_env *new)
 {
 	t_env	*last;
 
 	if (!new)
-		return (0);
+		return ;
 	if (!(*env))
 	{
 		*env = new;
-		return (1);
+		return ;
 	}
 	last = last_node(*env);
 	last->next = new;
-	return (1);
+	return ;
 }
 
-int	copy_env(char **envp, t_env **env)
+int	copy_env(char **envp, t_env **env, t_gc_node **gc)
 {
 	int		i;
 	t_env	*new_node;
@@ -43,9 +41,7 @@ int	copy_env(char **envp, t_env **env)
 	i = -1;
 	while (envp[++i])
 	{
-		new_node = create_node(envp[i]);
-		if (!new_node)
-			return (free_env(*env), 0);
+		new_node = create_node(envp[i], gc);
 		add_back(env, new_node);
 	}
 	return (1);

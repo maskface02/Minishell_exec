@@ -1,6 +1,6 @@
 #include "exec.h"
 
-int	execute_builtin(t_shell *shell, t_command *cmd)
+int	execute_builtin(t_shell *shell, t_command *cmd, t_gc_node **gc)
 {
 	int	ret;
 
@@ -12,7 +12,7 @@ int	execute_builtin(t_shell *shell, t_command *cmd)
 	else if (!ft_strncmp(cmd->args[0], "env", 4))
 		ret = my_env(shell->env, &cmd->args[1]);
 	else if (!ft_strncmp(cmd->args[0], "export", 7))
-		ret = my_export(&shell->env, &cmd->args[1]);
+		ret = my_export(&shell->env, &cmd->args[1], gc);
 	else if (!ft_strncmp(cmd->args[0], "pwd", 4))
 		ret = my_pwd(shell);
 	else if (!ft_strncmp(cmd->args[0], "unset", 6))
@@ -34,7 +34,7 @@ int	is_builtin(char *cmd)
 void	start_exec(t_shell *shell)
 {
 	if (is_builtin(shell->cmd->args[0]))
-		shell->last_exit_status = execute_builtin(shell, shell->cmd);
+		shell->last_exit_status = execute_builtin(shell, shell->cmd, &shell->gc);
 }
 
 int	main(int ac, char **av, char **envp)
@@ -45,7 +45,7 @@ int	main(int ac, char **av, char **envp)
 	(void)av;
 
 	memset(&shell, 0, sizeof(t_shell));
-	copy_env(envp, &shell.env);
+	copy_env(envp, &shell.env, &shell.gc);
 	while (1337)
 	{
 		shell.r_line = readline("Minishell  > ");
@@ -53,6 +53,7 @@ int	main(int ac, char **av, char **envp)
 			exit(0);
 		shell.cmd = malloc(sizeof(t_command));
 		shell.cmd->args = ft_split(shell.r_line, ' ');
+    shell.cmd->next = NULL;
 		if (ft_strlen(shell.r_line))
 		{
 			add_history(shell.r_line);

@@ -38,92 +38,82 @@ size_t	ft_strlen(char *s)
 {
 	int	i;
 
-  if (!s)
-    return (0);
+	if (!s)
+		return (0);
 	i = 0;
 	while (s[i])
 		i++;
 	return (i);
 }
 
-char	*ft_strjoin(char *s1, char *s2)
+char	*ft_strjoin(char *s1, char *s2, t_gc_node **gc)
 {
-	char	*new_str;
+	size_t	len1;
+	size_t	len2;
+	char	*res;
 	size_t	i;
-	size_t	j;
-	size_t	s_len1;
-	size_t	s_len2;
 
-	s_len1 = ft_strlen(s1);
-	s_len2 = ft_strlen(s2);
-	new_str = malloc(s_len1 + s_len2 + 1);
-	if (!new_str)
-		return (NULL);
+	len1 = ft_strlen(s1);
+	len2 = ft_strlen(s2);
+	res = gc_malloc(gc, len1 + len2 + 1);
 	i = 0;
-	while (i < s_len1)
+	while (*s1)
+		res[i++] = *s1++;
+	while (*s2)
+		res[i++] = *s2++;
+	res[i] = '\0';
+	return (res);
+}
+char	*ft_strndup(char *s, size_t n)
+{
+	char	*res;
+	size_t	i;
+
+	i = 0;
+	res = malloc(sizeof(n + 1));
+	if (!res)
+		return (NULL);
+	while (i < n)
 	{
-		new_str[i] = s1[i];
+		res[i] = s[i];
 		i++;
 	}
-	j = 0;
-	while (j < s_len2)
-	{
-		new_str[j + i] = s2[j];
-		j++;
-	}
-	new_str[i + j] = '\0';
-	return (new_str);
+	res[i] = '\0';
+	return (res);
 }
-
-char	*ft_strdup(char *s)
+char	*ft_strdup(char *s, t_gc_node **gc)
 {
-	char	*t;
+	size_t	len;
+	char	*dup;
 	size_t	i;
 
-	t = malloc(ft_strlen(s) + 1);
-	if (!t)
-		return (NULL);
+	len = ft_strlen(s) + 1;
+	dup = gc_malloc(gc, len);
 	i = 0;
 	while (s[i])
 	{
-		t[i] = s[i];
+		dup[i] = s[i];
 		i++;
 	}
-	t[i] = '\0';
-	return (t);
+	dup[i] = '\0';
+	return (dup);
 }
 // norm
-void	cmd_error(char *cmd_name, char *error_arg, char *error_msg)
+void	cmd_error(char *cmd, char *arg, char *msg)
 {
-	char	*full_msg;
-	char	*tmp;
-
-	tmp = ft_strdup(PROMPT);
-	full_msg = ft_strjoin(tmp, ": ");
-	free(tmp);
-	if (cmd_name)
+	write(2, "minishell: ", 11);
+	write(2, cmd, ft_strlen(cmd));
+	if (arg)
 	{
-		tmp = full_msg;
-		full_msg = ft_strjoin(tmp, cmd_name);
-		free(tmp);
-		tmp = full_msg;
-		full_msg = ft_strjoin(tmp, ": ");
-		free(tmp);
+		write(2, ": ", 2);
+		write(2, arg, ft_strlen(arg));
 	}
-	if (error_arg)
+	if (msg)
 	{
-		tmp = full_msg;
-		full_msg = ft_strjoin(tmp, error_arg);
-		free(tmp);
-		tmp = full_msg;
-		full_msg = ft_strjoin(tmp, ": ");
-		free(tmp);
+		write(2, ": ", 2);
+		write(2, msg, ft_strlen(msg));
 	}
-	tmp = full_msg;
-	full_msg = ft_strjoin(tmp, error_msg);
-	free(tmp);
-	ft_putendl_fd(full_msg, 2);
-	free(full_msg);
+	write(2, "\n", 1);
 }
 
 int	is_overflowed(long res, int last_digit, int sign)
