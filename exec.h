@@ -1,18 +1,26 @@
 #include <errno.h>
 #include <limits.h>
+#include <stdio.h>
 #include <readline/history.h>
 #include <readline/readline.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
 #define PROMPT "minishell"
+
+#define REDIR_IN 1
+#define REDIR_OUT 2
+#define REDIR_APPEND 3
+#define REDIR_HEREDOC 4
+
 
 typedef struct s_redir
 {
 	int					type;
 	char				*target;
+	char				*heredoc_file_name;// heredoc name to open it in the execution phase
 	struct s_redir		*next;
 }						t_redir;
 

@@ -12,11 +12,6 @@
 
 #include "../exec.h"
 
-int	is_alone(t_command *cmd)
-{
-    return (!cmd->next);
-}
-
 int	exit_status(char *status, int *exit)
 {
 	long	converted;
@@ -42,12 +37,10 @@ int	exit_status(char *status, int *exit)
 
 void	exit_all(int status, t_shell *shell)
 {
-
-  (void)shell;
-  // free allocated resources in shell struct
-	/*free_env(shell->env);
+	// free allocated resources in shell struct
+	free_env(shell->env);
 	free_cmd(shell->cmd);
-	free(shell);*/
+	free(shell);
 	exit(status);
   // still need update
 }
@@ -58,18 +51,17 @@ int	my_exit(char **args, t_shell *shell)
 	int	status;
 	int	error;
 
-	if (is_alone(shell->cmd))
+	if (!shell->cmd->next)
 		ft_putendl_fd("exit", 2);
 	n = args_counter(args);
 	if (!n)
-		return ( exit(0), 0);// still need edit !!leaks just for testing
-  // now
+		return (0);
 	error = exit_status(args[0], &status);
 	if (error)
 		return (cmd_error("exit", args[0], "numeric argument required"), 2);
 	if (n > 1)
 		return (cmd_error("exit", NULL, "too many arguments"), 1);
-	if (is_alone(shell->cmd))
+	if (!shell->cmd->next)
 		exit_all(status, shell);
 	return (status);
 }

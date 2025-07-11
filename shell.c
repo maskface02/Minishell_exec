@@ -1,393 +1,413 @@
-#include <fcntl.h>
-#include <readline/history.h>
-#include <readline/readline.h>
+#include "exec.h"
 #include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <sys/wait.h>
-#include <unistd.h>
+int		execute_builtin(t_shell *shell, t_command *cmd);
+int		is_builtin(char *cmd);
+char	*get_env_value(t_env *env, const char *key);
+char	*find_executable(t_env *env, char *cmd);
+char	**convert_env(t_env *env);
+int		setup_redirections(t_redir *redirs);
+void	restore_std_fds(int stdin_copy, int stdout_copy);
+void	execute_pipeline(t_shell *shell);
+void	handle_child_process(t_shell *shell, t_command *cmd, int in_fd,
+			int out_fd);
+void	wait_for_children(int num_commands, pid_t *pids, t_shell *shell);
+void	execute(t_shell *shell);
 
-#define PROMPT "minishell"
-#define REDIR_IN 1
-#define REDIR_OUT 2
-#define REDIR_APPEND 3
-#define REDIR_HEREDOC 4
-
-typedef struct s_redir
+int	execute_builtin(t_shell *shell, t_command *cmd)
 {
-	int					type;
-	char				*target;
-	int					fd;
-	struct s_redir		*next;
-}						t_redir;
+	int	ret;
 
-typedef struct s_command
-{
-	char				**args;
-	t_redir				*redirs;
-	struct s_command	*next;
-	struct s_command	*prev;
-}						t_command;
-
-typedef struct s_env
-{
-	char				*value;
-	struct s_env		*next;
-}						t_env;
-
-typedef struct s_shell
-{
-	char				*r_line;
-	t_command			*cmd;
-	t_env				*env;
-	int					last_exit_status;
-	char				*cwd;
-}						t_shell;
-
-int						is_builtin(char *cmd);
-int						execute_builtin(t_shell *shell, char **args);
-void					execute_external(t_command *cmd, t_env *env);
-char					*find_in_path(char *cmd, t_env *env);
-char					**env_to_array(t_env *env);
-int						apply_redirections(t_command *cmd);
-int						preprocess_heredocs(t_shell *shell);
-int						count_commands(t_shell *shell);
-int						is_single_builtin(t_shell *shell);
-void					execute_single_builtin(t_shell *shell);
-void					execute_command_pipeline(t_shell *shell);
-void					cleanup_heredocs(t_shell *shell);
-
-void	start_exec(t_shell *shell)
-{
-	if (!shell->cmd)
-		return ;
-	if (!preprocess_heredocs(shell))
-	{
-		shell->last_exit_status = 1;
-		return ;
-	}
-	if (is_single_builtin(shell))
-		execute_single_builtin(shell);
-	else
-		execute_command_pipeline(shell);
-	cleanup_heredocs(shell);
+	ret = 127;
+	if (ft_strncmp(cmd->args[0], "cd", 3) == 0)
+		ret = my_cd(shell, &cmd->args[1]);
+	else if (ft_strncmp(cmd->args[0], "echo", 5) == 0)
+		ret = my_echo(&cmd->args[1]);
+	else if (ft_strncmp(cmd->args[0], "env", 4) == 0)
+		ret = my_env(shell->env, &cmd->args[1]);
+	else if (ft_strncmp(cmd->args[0], "export", 7) == 0)
+		ret = my_export(&shell->env, &cmd->args[1]);
+	else if (ft_strncmp(cmd->args[0], "pwd", 4) == 0)
+		ret = my_pwd(shell);
+	else if (ft_strncmp(cmd->args[0], "unset", 6) == 0)
+		ret = my_unset(&shell->env, &cmd->args[1]);
+	else if (ft_strncmp(cmd->args[0], "exit", 5) == 0)
+		ret = my_exit(&cmd->args[1], shell);
+	return (ret);
 }
 
-int	preprocess_heredocs(t_shell *shell)
+int	is_builtin(char *cmd)
 {
-	t_command	*cmd;
-	t_redir		*redir;
-	int			pipe_fd[2];
-	char		*line;
-
-	cmd = shell->cmd;
-	while (cmd)
-	{
-		redir = cmd->redirs;
-		while (redir)
-		{
-			if (redir->type == REDIR_HEREDOC)
-			{
-				if (pipe(pipe_fd) == -1)
-				{
-					perror("minishell: pipe");
-					return (0);
-				}
-				while (1)
-				{
-					line = readline("> ");
-					if (!line)
-					{
-						write(1, "\n", 1);
-						break ;
-					}
-					if (strcmp(line, redir->target) == 0)
-					{
-						free(line);
-						break ;
-					}
-					write(pipe_fd[1], line, strlen(line));
-					write(pipe_fd[1], "\n", 1);
-					free(line);
-				}
-				close(pipe_fd[1]);
-				redir->fd = pipe_fd[0];
-			}
-			redir = redir->next;
-		}
-		cmd = cmd->next;
-	}
-	return (1);
+	if (ft_strcmp(cmd, "exit") == 0 || ft_strcmp(cmd, "unset") == 0
+		|| ft_strcmp(cmd, "env") == 0 || ft_strcmp(cmd, "export") == 0
+		|| ft_strcmp(cmd, "cd") == 0 || ft_strcmp(cmd, "pwd") == 0
+		|| ft_strcmp(cmd, "echo") == 0)
+		return (1);
+	return (0);
 }
 
-int	is_single_builtin(t_shell *shell)
+void	execute(t_shell *shell)
 {
-	if (!shell->cmd)
-		return (0);
-	if (shell->cmd->next)
-		return (0); // Pipeline exists
-	return (is_builtin(shell->cmd->args[0]));
-}
-
-void	execute_single_builtin(t_shell *shell)
-{
-	t_command	*cmd;
+	int			count;
+	t_command	*tmp;
 	int			saved_stdin;
 	int			saved_stdout;
-	int			status;
 
-	cmd = shell->cmd;
-	saved_stdin = dup(STDIN_FILENO);
-	saved_stdout = dup(STDOUT_FILENO);
-	status = 0;
-	if (apply_redirections(cmd) == 0)
-		status = execute_builtin(shell, cmd->args);
+	if (!shell || !shell->cmd)
+		return ;
+	count = 0;
+	tmp = shell->cmd;
+	while (tmp)
+	{
+		count++;
+		tmp = tmp->next;
+	}
+	if (count == 1 && is_builtin(shell->cmd->args[0]))
+	{
+		saved_stdin = dup(STDIN_FILENO);
+		saved_stdout = dup(STDOUT_FILENO);
+		if (setup_redirections(shell->cmd->redirs) == -1)
+		{
+			shell->last_exit_status = 1;
+			write(2, "minishell: redirection error\n", 29);
+		}
+		else
+			shell->last_exit_status = execute_builtin(shell, shell->cmd);
+		restore_std_fds(saved_stdin, saved_stdout);
+		close(saved_stdin);
+		close(saved_stdout);
+	}
 	else
-		status = 1;
-	dup2(saved_stdin, STDIN_FILENO);
-	dup2(saved_stdout, STDOUT_FILENO);
-	close(saved_stdin);
-	close(saved_stdout);
-	shell->last_exit_status = status;
+		execute_pipeline(shell);
 }
 
-void	execute_command_pipeline(t_shell *shell)
+void	execute_pipeline(t_shell *shell)
 {
-	t_command	*cmd;
-	int			num_cmds;
+	t_command	*cur;
+	int			cmd_count;
+	int			prev_pipe[2] = {-1, -1};
 	pid_t		*pids;
-	int			prev_pipe_read;
-	int			pipe_fd[2];
+	t_command	*tmp_count;
 	int			i;
-	int			ret;
-		int status;
+	int			next_pipe[2] = {-1, -1};
 
-	cmd = shell->cmd;
-	num_cmds = count_commands(shell);
-	pids = malloc(num_cmds * sizeof(pid_t));
-	prev_pipe_read = -1;
-	i = 0;
+	cur = shell->cmd;
+	cmd_count = 0;
+	pids = NULL;
+	tmp_count = shell->cmd;
+	while (tmp_count)
+	{
+		cmd_count++;
+		tmp_count = tmp_count->next;
+	}
+	pids = malloc(cmd_count * sizeof(pid_t));
 	if (!pids)
 	{
-		perror("minishell: malloc");
+		perror("minishell");
 		return ;
 	}
-	while (cmd)
+	i = 0;
+	while (cur)
 	{
-		if (i < num_cmds - 1 && pipe(pipe_fd) < 0)
+		if (cur->next && pipe(next_pipe) == -1)
 		{
 			perror("minishell: pipe");
 			break ;
 		}
 		pids[i] = fork();
-		if (pids[i] < 0)
+		if (pids[i] == -1)
 		{
 			perror("minishell: fork");
 			break ;
 		}
 		if (pids[i] == 0)
-		{ // Child process
-			// Input from previous command
+		{
+			signal(SIGINT, SIG_DFL);
+			signal(SIGQUIT, SIG_DFL);
 			if (i > 0)
 			{
-				dup2(prev_pipe_read, STDIN_FILENO);
-				close(prev_pipe_read);
+				dup2(prev_pipe[0], STDIN_FILENO);
+				close(prev_pipe[0]);
+				close(prev_pipe[1]);
 			}
-			// Output to next command
-			if (i < num_cmds - 1)
+			if (cur->next)
 			{
-				close(pipe_fd[0]);
-				dup2(pipe_fd[1], STDOUT_FILENO);
-				close(pipe_fd[1]);
+				dup2(next_pipe[1], STDOUT_FILENO);
+				close(next_pipe[0]);
+				close(next_pipe[1]);
 			}
-			// Apply file redirections
-			if (apply_redirections(cmd) != 0)
-				exit(1);
-			// Execute command
-			if (is_builtin(cmd->args[0]))
-			{
-				ret = execute_builtin(shell, cmd->args);
-				exit(ret);
-			}
-			else
-			{
-				execute_external(cmd, shell->env);
-				exit(127); // Shouldn't reach here
-			}
+			handle_child_process(shell, cur, -1, -1);
+			exit(shell->last_exit_status);
 		}
 		else
-		{ // Parent process
-			// Close previous pipe read end
+		{
 			if (i > 0)
-				close(prev_pipe_read);
-			// Set up next pipe
-			if (i < num_cmds - 1)
 			{
-				close(pipe_fd[1]);
-				prev_pipe_read = pipe_fd[0];
+				close(prev_pipe[0]);
+				close(prev_pipe[1]);
 			}
-			// Move to next command
-			cmd = cmd->next;
-			i++;
+			if (cur->next)
+			{
+				prev_pipe[0] = next_pipe[0];
+				prev_pipe[1] = next_pipe[1];
+			}
 		}
+		cur = cur->next;
+		i++;
 	}
-	// Close last pipe
-	if (prev_pipe_read != -1)
-		close(prev_pipe_read);
-	// Wait for all children
-	for (int j = 0; j < i; j++)
-	{
-		waitpid(pids[j], &status, 0);
-		if (j == i - 1)
-		{ // Last command
-			if (WIFEXITED(status))
-				shell->last_exit_status = WEXITSTATUS(status);
-			else if (WIFSIGNALED(status))
-				shell->last_exit_status = 128 + WTERMSIG(status);
-		}
-	}
+	if (prev_pipe[0] != -1)
+		close(prev_pipe[0]);
+	if (prev_pipe[1] != -1)
+		close(prev_pipe[1]);
+	wait_for_children(i, pids, shell);
 	free(pids);
 }
 
-int	apply_redirections(t_command *cmd)
+void	handle_child_process(t_shell *shell, t_command *cmd, int in_fd,
+		int out_fd)
 {
-	t_redir	*redir;
-	int		fd;
+	char	*full_path;
+	char	**env_array;
 
-	redir = cmd->redirs;
-	while (redir)
+	if (setup_redirections(cmd->redirs) == -1)
 	{
-		if (redir->type == REDIR_IN)
+		shell->last_exit_status = 1;
+		exit(1);
+	}
+	if (in_fd != -1)
+		dup2(in_fd, STDIN_FILENO);
+	if (out_fd != -1)
+		dup2(out_fd, STDOUT_FILENO);
+	if (is_builtin(cmd->args[0]))
+	{
+		shell->last_exit_status = execute_builtin(shell, cmd);
+		exit(shell->last_exit_status);
+	}
+	else
+	{
+		full_path = find_executable(shell->env, cmd->args[0]);
+		if (!full_path)
 		{
-			fd = open(redir->target, O_RDONLY);
-			if (fd < 0)
+			write(2, "minishell: ", 11);
+			write(2, cmd->args[0], ft_strlen(cmd->args[0]));
+			write(2, ": command not found\n", 20);
+			exit(127);
+		}
+		env_array = convert_env(shell->env);
+		execve(full_path, cmd->args, env_array);
+		perror("minishell");
+		free(full_path);
+		free(env_array);
+		exit(126);
+	}
+}
+
+int	setup_redirections(t_redir *redirs)
+{
+	t_redir		*cur;
+	int			fd;
+	const char	*filename;
+
+	cur = redirs;
+	while (cur)
+	{
+		if (cur->type == REDIR_HEREDOC)
+			filename = cur->heredoc_file_name;
+		else
+			filename = cur->target;
+		if (cur->type == REDIR_IN || cur->type == REDIR_HEREDOC)
+		{
+			fd = open(filename, O_RDONLY);
+			if (fd == -1)
 			{
 				perror("minishell");
-				return (1);
+				return (-1);
 			}
 			dup2(fd, STDIN_FILENO);
 			close(fd);
 		}
-		else if (redir->type == REDIR_HEREDOC)
+		else if (cur->type == REDIR_OUT)
 		{
-			dup2(redir->fd, STDIN_FILENO);
-			close(redir->fd);
-		}
-		else if (redir->type == REDIR_OUT)
-		{
-			fd = open(redir->target, O_WRONLY | O_CREAT | O_TRUNC, 0644);
-			if (fd < 0)
+			fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+			if (fd == -1)
 			{
 				perror("minishell");
-				return (1);
+				return (-1);
 			}
 			dup2(fd, STDOUT_FILENO);
 			close(fd);
 		}
-		else if (redir->type == REDIR_APPEND)
+		else if (cur->type == REDIR_APPEND)
 		{
-			fd = open(redir->target, O_WRONLY | O_CREAT | O_APPEND, 0644);
-			if (fd < 0)
+			fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
+			if (fd == -1)
 			{
 				perror("minishell");
-				return (1);
+				return (-1);
 			}
 			dup2(fd, STDOUT_FILENO);
 			close(fd);
 		}
-		redir = redir->next;
+		cur = cur->next;
 	}
 	return (0);
 }
 
-void	execute_external(t_command *cmd, t_env *env)
+char	*find_executable(t_env *env, char *cmd)
 {
 	char	*path;
-	char	**env_arr;
+	char	*path_copy;
+	char	*save;
+	char	*dir;
+	char	*full_path;
+	int		found;
+	char	*part1;
 
-	path = find_in_path(cmd->args[0], env);
-	env_arr = env_to_array(env);
-	if (!path)
+	if (!cmd)
+		return (NULL);
+	if (ft_strchr(cmd, '/'))
 	{
-		fprintf(stderr, "minishell: %s: command not found\n", cmd->args[0]);
-		exit(127);
+		if (access(cmd, X_OK) == 0)
+			return (ft_strdup(cmd));
+		return (NULL);
 	}
-	execve(path, cmd->args, env_arr);
-	perror("minishell");
-	free(path);
-	// Free env_arr if needed
-	exit(126);
+	path = get_env_value(env, "PATH");
+	if (!path)
+		return (NULL);
+	path_copy = ft_strdup(path);
+	save = path_copy;
+	dir = NULL;
+	full_path = NULL;
+	found = 0;
+	while (*path_copy && !found)
+	{
+		dir = path_copy;
+		while (*path_copy && *path_copy != ':')
+			path_copy++;
+		if (*path_copy == ':')
+		{
+			*path_copy = '\0';
+			path_copy++;
+		}
+		if (*dir)
+		{
+			part1 = ft_strjoin(dir, "/");
+			full_path = ft_strjoin(part1, cmd);
+			free(part1);
+			if (full_path && access(full_path, X_OK) == 0)
+				found = 1;
+			else if (full_path)
+			{
+				free(full_path);
+				full_path = NULL;
+			}
+		}
+	}
+	free(save);
+	return (full_path);
 }
 
-int	count_commands(t_shell *shell)
+char	**convert_env(t_env *env)
 {
-	t_command	*cmd;
-	int			count;
+	int		count;
+	t_env	*tmp;
+	char	**envp;
+	int		i;
 
-	cmd = shell->cmd;
 	count = 0;
-	while (cmd)
+	tmp = env;
+	while (tmp)
 	{
 		count++;
-		cmd = cmd->next;
+		tmp = tmp->next;
 	}
-	return (count);
-}
-
-void	cleanup_heredocs(t_shell *shell)
-{
-	t_command	*cmd;
-	t_redir		*redir;
-
-	cmd = shell->cmd;
-	while (cmd)
+	envp = malloc((count + 1) * sizeof(char *));
+	if (!envp)
+		return (NULL);
+	tmp = env;
+	i = 0;
+	while (tmp)
 	{
-		redir = cmd->redirs;
-		while (redir)
-		{
-			if (redir->type == REDIR_HEREDOC && redir->fd != -1)
-			{
-				close(redir->fd);
-				redir->fd = -1;
-			}
-			redir = redir->next;
-		}
-		cmd = cmd->next;
+		envp[i] = tmp->value;
+		i++;
+		tmp = tmp->next;
 	}
+	envp[count] = NULL;
+	return (envp);
 }
 
-// Example main function
-/*int	main(int ac, char **av, char **env)
+/*char	*get_env_value(t_env *env, const char *key)
+{
+	size_t	len;
+	t_env	*tmp;
+
+	len = ft_strlen(key);
+	tmp = env;
+	while (tmp)
+	{
+		if (ft_strncmp(tmp->value, key, len) == 0 && tmp->value[len] == '=')
+			return (tmp->value + len + 1);
+		tmp = tmp->next;
+	}
+	return (NULL);
+}
+*/
+void	restore_std_fds(int stdin_copy, int stdout_copy)
+{
+	dup2(stdin_copy, STDIN_FILENO);
+	dup2(stdout_copy, STDOUT_FILENO);
+}
+
+void	wait_for_children(int num_commands, pid_t *pids, t_shell *shell)
+{
+	int		status;
+	pid_t	wpid;
+	int		last_status;
+	int		i;
+
+	last_status = 0;
+	i = 0;
+	while (i < num_commands)
+	{
+		wpid = waitpid(-1, &status, 0);
+		if (wpid == -1)
+		{
+			perror("minishell: waitpid");
+			i++;
+			continue ;
+		}
+		if (WIFEXITED(status))
+			last_status = WEXITSTATUS(status);
+		else if (WIFSIGNALED(status))
+			last_status = 128 + WTERMSIG(status);
+		i++;
+	}
+	shell->last_exit_status = last_status;
+}
+
+int	main(int ac, char **av, char **envp)
 {
 	t_shell	shell;
-	char	*prompt;
 
-	prompt = "minishell> ";
-	(void)ac;
-	(void)av;
 	memset(&shell, 0, sizeof(t_shell));
-	// Initialize environment (simplified)
-	// shell.env = init_env(env);
-	while (1)
+	copy_env(envp, &shell.env);
+	while (1337)
 	{
-		shell.r_line = readline(prompt);
+		shell.r_line = readline("Minishell  > ");
 		if (!shell.r_line)
 			exit(0);
-		if (strlen(shell.r_line) > 0)
+		shell.cmd = malloc(sizeof(t_command));
+		shell.cmd->args = ft_split(shell.r_line, ' ');
+		shell.cmd->redirs = NULL;
+		shell.cmd->next = NULL;
+		shell.cmd->prev = NULL;
+		if (ft_strlen(shell.r_line))
 		{
 			add_history(shell.r_line);
-			// Parse input into commands and redirections
-			// shell.cmd = parse_input(shell.r_line, shell.env);
-			start_exec(&shell);
+			execute(&shell);
+			printf("exit status : %d \n", shell.last_exit_status);
 		}
 		free(shell.r_line);
-		shell.r_line = NULL;
-		// Free commands and redirections
-		// cleanup_commands(shell.cmd);
-		shell.cmd = NULL;
+	//	free_command(shell.cmd);
 	}
-	return (0);
-}*/
+}
