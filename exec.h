@@ -50,9 +50,8 @@ typedef struct s_shell
 	t_command			*cmd;
 	t_redir				*red;
 	t_env				*env;
-	t_env *exp_env; // no need
 	int					last_exit_status;
-	char *cwd; // unite at first
+	char *cwd;
 	t_gc_node			*gc;
 }						t_shell;
 
@@ -75,17 +74,17 @@ void					free_cmd(t_command *cmd);
 int						my_echo(char **args);
 int						my_pwd(t_shell *shell);
 int						my_exit(char **args, t_shell *shell);
-int						my_unset(t_env **env, char **args);
+int						my_unset(t_env **env, char **args, t_gc_node **gc);
 int						is_var_exist(t_env *env, char *var);
 int						ft_strcmp(char *s1, char *s2);
 // char					*ft_strjoin(char *s1, char *s2);
-char					*ft_strndup(char *s, size_t n);
+char					*ft_strndup(char *s, size_t n, t_gc_node **gc);
 char					*ft_strchr(char *s, int c);
 int						ft_isalnum(int c);
 int						ft_isalpha(int c);
 int						my_env(t_env *env, char **args);
 t_env					*find_env_var(t_env *env, char *name);
-int						my_cd(t_shell *shell, char **args);
+int						my_cd(t_shell *shell, char **args, t_gc_node **gc);
 char					**ft_split(char const *s, char c);
 int	my_export(t_env **env, char **args, t_gc_node **gc);
 char					*ft_strdup(char *s, t_gc_node **gc);

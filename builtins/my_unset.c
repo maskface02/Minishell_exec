@@ -12,7 +12,7 @@
 
 #include "../exec.h"
 
-void	free_and_update(t_env **prev, t_env **current, t_env **env)
+void	free_and_update(t_env **prev, t_env **current, t_env **env, t_gc_node **gc)
 {
 	t_env	*temp;
 
@@ -27,11 +27,12 @@ void	free_and_update(t_env **prev, t_env **current, t_env **env)
 		(*prev)->next = temp->next;
 		*current = (*prev)->next;
 	}
-	free(temp->value);
-	free(temp);
+	//free(temp->value);
+  gc_remove(gc, temp->value);
+	gc_remove(gc, temp);
 }
 // still need a check for unset invalid arg like 45hello or !hello
-int	my_unset(t_env **env, char **args)
+int	my_unset(t_env **env, char **args, t_gc_node **gc)
 {
 	int		i;
 	t_env	*current;
@@ -49,7 +50,7 @@ int	my_unset(t_env **env, char **args)
 			if (!ft_strncmp(current->value, args[i], ft_strlen(args[i]))
 				&& (current->value[ft_strlen(args[i])] == '='
 				|| current->value[ft_strlen(args[i])] == '\0'))
-				free_and_update(&prev, &current, env);
+				free_and_update(&prev, &current, env, gc);
 			else
 				(1) && (prev = current, current = current->next);
 		}

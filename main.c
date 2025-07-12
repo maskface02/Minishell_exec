@@ -6,7 +6,7 @@ int	execute_builtin(t_shell *shell, t_command *cmd, t_gc_node **gc)
 
 	ret = 127;
 	if (!ft_strncmp(cmd->args[0], "cd", 3))
-		ret = my_cd(shell, &cmd->args[1]);
+		ret = my_cd(shell, &cmd->args[1], gc);
 	else if (!ft_strncmp(cmd->args[0], "echo", 5))
 		ret = my_echo(&cmd->args[1]);
 	else if (!ft_strncmp(cmd->args[0], "env", 4))
@@ -16,7 +16,7 @@ int	execute_builtin(t_shell *shell, t_command *cmd, t_gc_node **gc)
 	else if (!ft_strncmp(cmd->args[0], "pwd", 4))
 		ret = my_pwd(shell);
 	else if (!ft_strncmp(cmd->args[0], "unset", 6))
-		ret = my_unset(&shell->env, &cmd->args[1]);
+		ret = my_unset(&shell->env, &cmd->args[1], gc);
 	else if (!ft_strncmp(cmd->args[0], "exit", 5))
 		ret = my_exit(&cmd->args[1], shell);
 	return (ret);
@@ -59,6 +59,7 @@ int	main(int ac, char **av, char **envp)
 			add_history(shell.r_line);
 			start_exec(&shell);
 			printf("exit status : %d \n", shell.last_exit_status);
+      free(shell.r_line);
 		}
 	}
 }

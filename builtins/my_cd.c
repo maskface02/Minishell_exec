@@ -72,19 +72,18 @@ int	update_pwd_vars(t_shell *shell, char *oldpwd, char *new)
 	return (!exp_ret);
 }
 
-int	update_cwd(t_shell *shell, char *new_path)
+int	update_cwd(t_shell *shell, char *new_path, t_gc_node **gc)
 {
 	char	*new_cwd;
 
 	new_cwd = ft_strdup(new_path, &shell->gc);
-	if (!new_cwd)
-		return (0);
-	free(shell->cwd);
+	//free(shell->cwd);
+  gc_remove(gc, shell->cwd);
 	shell->cwd = new_cwd;
 	return (1);
 }
 
-int	my_cd(t_shell *shell, char **args)
+int	my_cd(t_shell *shell, char **args, t_gc_node **gc)
 {
 	char	*oldpwd;
 	char	*path;
@@ -125,7 +124,7 @@ int	my_cd(t_shell *shell, char **args)
 	status = 0;
 	if (!update_pwd_vars(shell, oldpwd, new))
 		status = 1;
-	if (!update_cwd(shell, new))
+	if (!update_cwd(shell, new, gc))
 		status = 1;
 	return (status);
 }

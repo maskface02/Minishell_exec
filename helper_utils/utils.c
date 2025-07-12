@@ -64,15 +64,13 @@ char	*ft_strjoin(char *s1, char *s2, t_gc_node **gc)
 	res[i] = '\0';
 	return (res);
 }
-char	*ft_strndup(char *s, size_t n)
+char	*ft_strndup(char *s, size_t n, t_gc_node **gc)
 {
 	char	*res;
 	size_t	i;
 
 	i = 0;
-	res = malloc(sizeof(n + 1));
-	if (!res)
-		return (NULL);
+	res = gc_malloc(gc, n + 1);
 	while (i < n)
 	{
 		res[i] = s[i];
