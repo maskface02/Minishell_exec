@@ -33,6 +33,9 @@ int	is_builtin(char *cmd)
 
 void	start_exec(t_shell *shell)
 {
+  int count;
+
+  count = cmd_counter();
 	if (is_builtin(shell->cmd->args[0]))
 		shell->last_exit_status = execute_builtin(shell, shell->cmd, &shell->gc);
 }
