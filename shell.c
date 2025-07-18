@@ -85,7 +85,7 @@ void	execute_pipeline(t_shell *shell)
 {
 	t_command	*cur;
 	int			cmd_count;
-	int			prev_pipe[2] = {-1, -1};
+	int			prev_pipe = -1;
 	pid_t		*pids;
 	t_command	*tmp_count;
 	int			i;
@@ -124,9 +124,8 @@ void	execute_pipeline(t_shell *shell)
 		{
 			if (i > 0)
 			{
-				dup2(prev_pipe[0], STDIN_FILENO);
-				close(prev_pipe[0]);
-				close(prev_pipe[1]);
+				dup2(prev_pipe, STDIN_FILENO);
+				close(prev_pipe);
 			}
 			if (cur->next)
 			{
@@ -140,23 +139,17 @@ void	execute_pipeline(t_shell *shell)
 		else
 		{
 			if (i > 0)
-			{
-				close(prev_pipe[0]);
-				close(prev_pipe[1]);
-			}
+				close(prev_pipe);
 			if (cur->next)
-			{
-				prev_pipe[0] = next_pipe[0];
-				prev_pipe[1] = next_pipe[1];
-			}
+				prev_pipe = next_pipe[0];
 		}
 		cur = cur->next;
 		i++;
 	}
-	if (prev_pipe[0] != -1)
-		close(prev_pipe[0]);
-	if (prev_pipe[1] != -1)
-		close(prev_pipe[1]);
+	if (prev_pipe != -1)
+		close(prev_pipe);
+	if (prev_pipe != -1)
+		close(prev_pipe);
 	wait_for_children(i, pids, shell);
 	free(pids);
 }
