@@ -120,10 +120,8 @@ void	execute_pipeline(t_shell *shell)
 			perror("minishell: fork");
 			break ;
 		}
-		if (pids[i] == 0)
+		if (!pids[i])
 		{
-			signal(SIGINT, SIG_DFL);
-			signal(SIGQUIT, SIG_DFL);
 			if (i > 0)
 			{
 				dup2(prev_pipe[0], STDIN_FILENO);
