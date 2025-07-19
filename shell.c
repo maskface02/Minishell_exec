@@ -114,8 +114,8 @@ void	execute_pipeline(t_shell *shell)
 			perror("minishell: fork");
       if (cur->next)
       {
-        close(pipe_fd[0]);
-        close(pipe_fd[1]);
+        close(next_pipe[0]);
+        close(next_pipe[1]);
       }
 			break ;
 		}

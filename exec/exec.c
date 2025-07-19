@@ -11,6 +11,9 @@
 /* ************************************************************************** */
 
 #include "../exec.h"
+#include <fcntl.h>
+#include <stdio.h>
+#include <unistd.h>
 
 int	execute_builtin(t_shell *shell)
 {
@@ -58,7 +61,7 @@ int	cmd_counter(t_command *cmd)
 
 int	open_in(int *fd, char *filename)
 {
-	*fd = open(filename, o_rdonly);
+	*fd = open(filename, O_RDONLY);
 	if (*fd == -1)
 	{
 		perror("minishell");
@@ -71,9 +74,9 @@ int	open_in(int *fd, char *filename)
 
 int	open_out(int *fd, char *filename, t_redir *rd)
 {
-	if (rd->type == redir_out)
+	if (rd->type == REDIR_OUT)
 	{
-		*fd = open(filename, o_wronly | o_creat | o_trunc, 0644);
+		*fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 		if (*fd == -1)
 		{
 			perror("minishell");
@@ -82,9 +85,9 @@ int	open_out(int *fd, char *filename, t_redir *rd)
 		dup2(*fd, 1);
 		close(1);
 	}
-	else if (rd->type == redir_append)
+	else if (rd->type == REDIR_APPEND)
 	{
-		*fd = open(filename, o_wronly | o_creat | o_append, 0644);
+		*fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
 		if (*fd == -1)
 		{
 			perror("minishell");
@@ -104,16 +107,15 @@ int	redirect(t_redir *rd)
 	while (rd)
 	{
 		filename = rd->target;
-		if (rd->type == redir_heredoc)
+		if (rd->type == REDIR_HEREDOC)
 			filename = rd->heredoc_file_name;
-		if (rd->type == redir_in || rd->type == redir_heredoc)
+		if (rd->type == REDIR_IN || rd->type == REDIR_HEREDOC)
 		{
 			if (!open_in(&fd, filename))
 				return (0);
 		}
-		else 
-      if (!open_out(&fd, filename, rd))
-			  return (0);
+		else if (!open_out(&fd, filename, rd))
+			return (0);
 		rd = rd->next;
 	}
 	return (1);
@@ -127,6 +129,67 @@ void	restore_stds(int stdin, int stdout)
 
 int	exec_pipeline(t_shell *shell)
 {
+	t_command	*cmd;
+	int			count;
+	int			next_pipe[2];
+	pid_t		*pids;
+	int			i;
+	int			prev_pipe;
+
+	cmd = shell->cmd;
+	count = cmd_counter(cmd);
+	pids = gc_malloc(&shell->gc, count * sizeof(pid_t));
+	while (cmd)
+	{
+		if (cmd->next && pipe(next_pipe) == -1)
+		{
+			perror("minishell");
+			break ;
+		}
+		pids[i] = fork();
+		if (pids[i] == -1)
+		{
+			perror("minishell: fork");
+			if (cmd->next)
+			{
+				close(next_pipe[0]);
+				close(next_pipe[1]);
+			}
+			break ;
+		}
+		if (!pids[i])
+		{
+			if (i > 0)
+			{
+				dup2(prev_pipe, STDIN_FILENO);
+				close(prev_pipe);
+			}
+			if (cmd->next)
+			{
+				dup2(next_pipe[1], STDOUT_FILENO);
+				close(next_pipe[0]);
+				close(next_pipe[1]);
+			}
+			// exec_child
+			exit(shell->last_exit_status);
+		}
+		else
+		{
+			if (i > 0)
+				close(prev_pipe);
+			if (cmd->next)
+			{
+				prev_pipe = next_pipe[0];
+				close(next_pipe[1]);
+			}
+		}
+		cmd = cmd->next;
+		i++;
+	}
+	if (prev_pipe != -1)
+		close(prev_pipe);
+	// wait_for_children
+	gc_remove(&shell->gc, pids);
 	return (0);
 }
 
