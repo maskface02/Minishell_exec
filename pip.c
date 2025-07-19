@@ -55,7 +55,6 @@ void	exec_child(char **envp, char *av)
 
 }
 
-// ./aout  a b c
 int	main(int ac, char **av, char **envp)
 {
 	int	n_cmd;

@@ -127,6 +127,33 @@ void	restore_stds(int stdin, int stdout)
 	dup2(stdout, 0);
 }
 
+
+void exec_child(t_shell *shell, t_command *cur_cmd)
+{
+	char	*full_path;
+	char	**env_array;
+
+	if (redirect(cur_cmd->redirs) == -1)
+	{
+		shell->last_exit_status = 1;
+		exit(1);
+	}
+	if (is_builtin(cur_cmd->args[0]))
+	{
+		shell->last_exit_status = execute_builtin(shell);
+		exit(shell->last_exit_status);
+	}
+  else 
+  {
+    if (cur_cmd->args[0][0] == '\0')
+    {
+      ft_putstr_fd("minishell: : command not found\n", 2);
+      exit(127);
+    }
+    full_path = find_bin();
+  }
+}
+
 int	exec_pipeline(t_shell *shell)
 {
 	t_command	*cmd;
@@ -138,6 +165,7 @@ int	exec_pipeline(t_shell *shell)
 
 	cmd = shell->cmd;
 	count = cmd_counter(cmd);
+  prev_pipe = -1;
 	pids = gc_malloc(&shell->gc, count * sizeof(pid_t));
 	while (cmd)
 	{
@@ -159,14 +187,15 @@ int	exec_pipeline(t_shell *shell)
 		}
 		if (!pids[i])
 		{
+      // signal_handler
 			if (i > 0)
 			{
-				dup2(prev_pipe, STDIN_FILENO);
+				dup2(prev_pipe, 1);
 				close(prev_pipe);
 			}
 			if (cmd->next)
 			{
-				dup2(next_pipe[1], STDOUT_FILENO);
+				dup2(next_pipe[1], 1);
 				close(next_pipe[0]);
 				close(next_pipe[1]);
 			}
