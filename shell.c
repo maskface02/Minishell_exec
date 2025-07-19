@@ -112,6 +112,11 @@ void	execute_pipeline(t_shell *shell)
 		if (pids[i] == -1)
 		{
 			perror("minishell: fork");
+      if (cur->next)
+      {
+        close(pipe_fd[0]);
+        close(pipe_fd[1]);
+      }
 			break ;
 		}
 		if (!pids[i])
@@ -135,13 +140,14 @@ void	execute_pipeline(t_shell *shell)
 			if (i > 0)
 				close(prev_pipe);
 			if (cur->next)
-				prev_pipe = next_pipe[0];
+      {
+        prev_pipe = next_pipe[0];
+        close(next_pipe[1]);
+      }
 		}
 		cur = cur->next;
 		i++;
 	}
-	if (prev_pipe != -1)
-		close(prev_pipe);
 	if (prev_pipe != -1)
 		close(prev_pipe);
 	wait_for_children(i, pids, shell);
