@@ -10,7 +10,6 @@
 /*                                                                            */
 /* ************************************************************************** */
 #include "../exec.h"
-#include <threads.h>
 
 size_t	get_len(char *str)
 {
@@ -217,11 +216,14 @@ int	handle_export_args(t_env **env, char **args, t_gc_node **gc)
 	ret = 0;
 	i = -1;
 	while (args[++i])
-		if (!process_argument(env, args[i], gc))
+		if (!process_argument(env, args[i], gc))// && process_argument(s_env, args[i], gc)
 			ret = 1;
 	return (ret);
 }
 
+
+// create secret env and change in export to modify it too
+// and don't forget  in cd too to update PWD and OLDPWD
 int	my_export(t_env **env, char **args, t_gc_node **gc)
 {
 	t_env		*copy_env;

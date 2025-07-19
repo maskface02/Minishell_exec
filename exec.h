@@ -48,7 +48,6 @@ typedef struct s_shell
 	char				*r_line;
 	//	t_token     *tokens;
 	t_command			*cmd;
-	t_redir				*red;
 	t_env				*env;
 	int					last_exit_status;
 	char *cwd;
