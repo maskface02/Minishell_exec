@@ -89,17 +89,11 @@ void	execute_pipeline(t_shell *shell)
 	pid_t		*pids;
 	t_command	*tmp_count;
 	int			i;
-	int			next_pipe[2] = {-1, -1};
+	int			next_pipe[2];
 
 	cur = shell->cmd;
 	cmd_count = 0;
-	pids = NULL;
-	tmp_count = shell->cmd;
-	while (tmp_count)
-	{
-		cmd_count++;
-		tmp_count = tmp_count->next;
-	}
+  cmd_counter(cmd);
 	pids = malloc(cmd_count * sizeof(pid_t));
 	if (!pids)
 	{

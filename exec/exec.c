@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   exec.c                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
+/*   by: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2025/07/14 02:38:49 by zatais            #+#    #+#             */
-/*   Updated: 2025/07/14 04:06:50 by zatais           ###   ########.fr       */
+/*   created: 2025/07/14 02:38:49 by zatais            #+#    #+#             */
+/*   updated: 2025/07/14 04:06:50 by zatais           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -58,42 +58,42 @@ int	cmd_counter(t_command *cmd)
 
 int	open_in(int *fd, char *filename)
 {
-	*fd = open(filename, O_RDONLY);
+	*fd = open(filename, o_rdonly);
 	if (*fd == -1)
 	{
 		perror("minishell");
-		return (-2);
+		return (0);
 	}
 	dup2(*fd, 0);
 	close(*fd);
-	return (*fd);
+	return (1);
 }
 
 int	open_out(int *fd, char *filename, t_redir *rd)
 {
-	if (rd->type == REDIR_OUT)
+	if (rd->type == redir_out)
 	{
-		*fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
+		*fd = open(filename, o_wronly | o_creat | o_trunc, 0644);
 		if (*fd == -1)
 		{
 			perror("minishell");
-			return (-2);
+			return (0);
+		}
+		dup2(*fd, 1);
+		close(1);
+	}
+	else if (rd->type == redir_append)
+	{
+		*fd = open(filename, o_wronly | o_creat | o_append, 0644);
+		if (*fd == -1)
+		{
+			perror("minishell");
+			return (0);
 		}
 		dup2(*fd, 1);
 		close(*fd);
 	}
-	else if (rd->type == REDIR_APPEND)
-	{
-		*fd = open(filename, O_WRONLY | O_CREAT | O_APPEND, 0644);
-		if (*fd == -1)
-		{
-			perror("minishell");
-			return (-2);
-		}
-		dup2(*fd, 1);
-		close(*fd);
-	}
-	return (*fd);
+	return (1);
 }
 
 int	redirect(t_redir *rd)
@@ -104,15 +104,15 @@ int	redirect(t_redir *rd)
 	while (rd)
 	{
 		filename = rd->target;
-		if (rd->type == REDIR_HEREDOC)
+		if (rd->type == redir_heredoc)
 			filename = rd->heredoc_file_name;
-		if (rd->type == REDIR_IN || rd->type == REDIR_HEREDOC)
+		if (rd->type == redir_in || rd->type == redir_heredoc)
 		{
-			if (open_in(&fd, filename) == -2)
+			if (!open_in(&fd, filename))
 				return (0);
 		}
 		else 
-      if (open_out(&fd, filename, rd) == -2)
+      if (!open_out(&fd, filename, rd))
 			  return (0);
 		rd = rd->next;
 	}
