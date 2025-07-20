@@ -6,14 +6,12 @@
 /*   by: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   created: 2025/07/14 02:38:49 by zatais            #+#    #+#             */
-/*   updated: 2025/07/14 04:06:50 by zatais           ###   ########.fr       */
+/*   Updated: 2025/07/20 06:41:03 by zatais           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../exec.h"
-#include <fcntl.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <stdlib.h>
 
 int	execute_builtin(t_shell *shell)
 {
@@ -127,8 +125,35 @@ void	restore_stds(int stdin, int stdout)
 	dup2(stdout, 0);
 }
 
+char	**convert_env(t_shell *shell)
+{
+	int		count;
+	t_env	*tmp;
+	char	**envp;
+	int		i;
 
-void exec_child(t_shell *shell, t_command *cur_cmd)
+	count = 0;
+	tmp = shell->env;
+	while (tmp)
+	{
+		++count;
+		tmp = tmp->next;
+	}
+	envp = malloc((count + 1) * sizeof(char *));
+	if (!envp)
+		return (NULL);
+	tmp = shell->env;
+	i = -1;
+	while (tmp)
+	{
+		envp[++i] = tmp->value;
+		tmp = tmp->next;
+	}
+	envp[count] = NULL;
+	return (envp);
+}
+
+void	exec_child(t_shell *shell, t_command *cur_cmd)
 {
 	char	*full_path;
 	char	**env_array;
@@ -143,15 +168,24 @@ void exec_child(t_shell *shell, t_command *cur_cmd)
 		shell->last_exit_status = execute_builtin(shell);
 		exit(shell->last_exit_status);
 	}
-  else 
-  {
-    if (cur_cmd->args[0][0] == '\0')
-    {
-      ft_putstr_fd("minishell: : command not found\n", 2);
-      exit(127);
-    }
-    full_path = find_bin();
-  }
+	/*else
+	{
+		if (!*cur_cmd->args[0])
+		{
+			ft_putstr_fd("minishell: : command not found\n", 2);
+			exit(127);
+		}
+	if(!check_cmd())
+	{
+		gc_clean(&shell->gc);
+		exit(shell->last_exit_status);
+	}
+		full_path = find_bin();
+	}*/
+	env_array = convert_env(shell);
+	execve("/usr/bin", cur_cmd->args, env_array);
+  //print command not found error
+  exit(127);
 }
 
 int	exec_pipeline(t_shell *shell)
@@ -165,7 +199,7 @@ int	exec_pipeline(t_shell *shell)
 
 	cmd = shell->cmd;
 	count = cmd_counter(cmd);
-  prev_pipe = -1;
+	prev_pipe = -1;
 	pids = gc_malloc(&shell->gc, count * sizeof(pid_t));
 	while (cmd)
 	{
@@ -187,7 +221,7 @@ int	exec_pipeline(t_shell *shell)
 		}
 		if (!pids[i])
 		{
-      // signal_handler
+			// signal_handler
 			if (i > 0)
 			{
 				dup2(prev_pipe, 1);
@@ -199,7 +233,7 @@ int	exec_pipeline(t_shell *shell)
 				close(next_pipe[0]);
 				close(next_pipe[1]);
 			}
-			// exec_child
+			exec_child(shell, cmd);
 			exit(shell->last_exit_status);
 		}
 		else

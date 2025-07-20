@@ -133,6 +133,7 @@ int	is_overflowed(long res, int last_digit, int sign)
 		return (1);
 	return (0);
 }
+
 int	is_space(char c)
 {
 	return ((c >= 0 && c <= 13) || c == 32);
@@ -164,13 +165,3 @@ long	ft_atol(char *arg, int *overflow)
 	}
 	return (res * sign);
 }
-
-/*int main()
-{
-  int overflowed = 0;
-  long val = ft_atol("9223372036854775900", &overflowed);
-  if (overflowed)
-	printf("long has been overflowed !");
-  else
-   printf("%ld", val);
-}*/

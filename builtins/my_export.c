@@ -24,22 +24,22 @@ size_t	get_len(char *str)
 	return (len);
 }
 
-int	compare_env_vars(char *s1, char *s2) 
+int	compare_env_vars(char *s1, char *s2)
 {
-	int len2;
-	int len1;
-	int cmp;
-	int min_len;
+	int	len2;
+	int	len1;
+	int	cmp;
+	int	min_len;
 
-  len1 = get_len(s1);
-  len2 = get_len(s2);
+	len1 = get_len(s1);
+	len2 = get_len(s2);
 	min_len = len1;
 	if (len2 < min_len)
 		min_len = len2;
-  cmp = ft_strncmp(s1, s2, min_len);
-  if (cmp)
-    return (cmp);
-  return (len1 - len2);
+	cmp = ft_strncmp(s1, s2, min_len);
+	if (cmp)
+		return (cmp);
+	return (len1 - len2);
 }
 
 t_env	*find_min_node(t_env *current)
@@ -184,7 +184,7 @@ int	update_env_var(t_env *node, char *new_value, t_gc_node **gc)
 	char	*new;
 
 	new = ft_strdup(new_value, gc);
-  gc_remove(gc, node->value);
+	gc_remove(gc, node->value);
 	node->value = new;
 	return (1);
 }
@@ -216,11 +216,10 @@ int	handle_export_args(t_env **env, char **args, t_gc_node **gc)
 	ret = 0;
 	i = -1;
 	while (args[++i])
-		if (!process_argument(env, args[i], gc))// && process_argument(s_env, args[i], gc)
+		if (!process_argument(env, args[i], gc)) // && process_argument(s_env,args[i],gc)
 			ret = 1;
 	return (ret);
 }
-
 
 // create secret env and change in export to modify it too
 // and don't forget  in cd too to update PWD and OLDPWD
