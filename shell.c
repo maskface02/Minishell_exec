@@ -298,34 +298,7 @@ char	*find_executable(t_env *env, char *cmd)
 	return (full_path);
 }
 
-char	**convert_env(t_env *env)
-{
-	int		count;
-	t_env	*tmp;
-	char	**envp;
-	int		i;
 
-	count = 0;
-	tmp = env;
-	while (tmp)
-	{
-		count++;
-		tmp = tmp->next;
-	}
-	envp = malloc((count + 1) * sizeof(char *));
-	if (!envp)
-		return (NULL);
-	tmp = env;
-	i = 0;
-	while (tmp)
-	{
-		envp[i] = tmp->value;
-		i++;
-		tmp = tmp->next;
-	}
-	envp[count] = NULL;
-	return (envp);
-}
 
 /*char	*get_env_value(t_env *env, const char *key)
 {

@@ -11,7 +11,10 @@
 /* ************************************************************************** */
 
 #include "../exec.h"
+#include <errno.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
 
 int	execute_builtin(t_shell *shell)
 {
@@ -125,7 +128,7 @@ void	restore_stds(int stdin, int stdout)
 	dup2(stdout, 0);
 }
 
-char	**convert_env(t_shell *shell)
+char	**convert_env(t_shell *shell, t_gc_node **cpgc)
 {
 	int		count;
 	t_env	*tmp;
@@ -139,7 +142,7 @@ char	**convert_env(t_shell *shell)
 		++count;
 		tmp = tmp->next;
 	}
-	envp = malloc((count + 1) * sizeof(char *));
+	envp = gc_malloc(cpgc, (count + 1) * sizeof(char *));
 	if (!envp)
 		return (NULL);
 	tmp = shell->env;
@@ -153,39 +156,92 @@ char	**convert_env(t_shell *shell)
 	return (envp);
 }
 
+char *find_bin(char *arg, t_env *env, t_gc_node **cpgc)
+{
+  char *full_path;
+  //check my_old pipex project before using interpreter methode
+  return (full_path);
+}
+
+int is_not_found(t_shell *shell, t_command *cur_cmd, char **full_path, t_gc_node **cpgc)
+{
+  if (!*cur_cmd->args[0])
+	{
+    cmd_error(cur_cmd->args[0], NULL, "command not found");
+		shell->last_exit_status = 127;
+    return (1);
+	}
+  if (ft_strchr(cur_cmd->args[0], '/'))
+    *full_path = ft_strdup(cur_cmd->args[0], cpgc);
+  else
+    *full_path = find_bin(cur_cmd->args[0], shell->env, cpgc);// TODO
+  if (!*full_path)
+  {
+    cmd_error(cur_cmd->args[0], NULL, "command not found");
+    shell->last_exit_status = 127;
+    return (1);
+  }
+  if (access(*full_path, F_OK))
+  {
+    cmd_error(*full_path, NULL, "command not found\n");
+    gc_clean(cpgc);
+    shell->last_exit_status = 127;
+    return (1);
+  }
+  return (0);
+}
+
+int is_directory(char *full_path)
+{
+  return (1);
+}
+int direc_perm(t_shell *shell, t_command *cur_cmd, char *full_path, t_gc_node **cpgc)
+{
+
+  if (is_directory(full_path))// 
+  {
+    cmd_error(full_path, NULL, "is a directory\n");
+    gc_clean(cpgc);
+    shell->last_exit_status  = 126;
+    return (1);
+  }
+  if (access(full_path, X_OK))
+  {
+    cmd_error(full_path, NULL, "permission denied\n");// check the correct syntax
+    gc_clean(cpgc);
+    shell->last_exit_status = 126;
+    return (1);
+  }
+  return (0);
+}
+
 void	exec_child(t_shell *shell, t_command *cur_cmd)
 {
 	char	*full_path;
 	char	**env_array;
+  t_gc_node *cpgc;
 
 	if (redirect(cur_cmd->redirs) == -1)
 	{
 		shell->last_exit_status = 1;
 		exit(1);
 	}
-	if (is_builtin(cur_cmd->args[0]))
+  if (is_builtin(cur_cmd->args[0]))
 	{
 		shell->last_exit_status = execute_builtin(shell);
 		exit(shell->last_exit_status);
 	}
-	/*else
-	{
-		if (!*cur_cmd->args[0])
-		{
-			ft_putstr_fd("minishell: : command not found\n", 2);
-			exit(127);
-		}
-	if(!check_cmd())
-	{
-		gc_clean(&shell->gc);
-		exit(shell->last_exit_status);
-	}
-		full_path = find_bin();
-	}*/
-	env_array = convert_env(shell);
-	execve("/usr/bin", cur_cmd->args, env_array);
-  //print command not found error
-  exit(127);
+  if (is_not_found(shell, cur_cmd, &full_path, &cpgc))
+    exit(shell->last_exit_status);
+  if (direc_perm(shell,cur_cmd, full_path, &cpgc))
+      exit(shell->last_exit_status);
+  env_array = convert_env(shell, &cpgc);
+  execve(full_path, cur_cmd->args, env_array);
+  ft_putstr_fd("minishell: ", 2);
+  ft_putstr_fd(strerror(errno), 2);
+  ft_putstr_fd("\n", 2);
+  gc_clean(&cpgc);
+  exit(126);
 }
 
 int	exec_pipeline(t_shell *shell)
@@ -200,6 +256,7 @@ int	exec_pipeline(t_shell *shell)
 	cmd = shell->cmd;
 	count = cmd_counter(cmd);
 	prev_pipe = -1;
+  i = 0;
 	pids = gc_malloc(&shell->gc, count * sizeof(pid_t));
 	while (cmd)
 	{
@@ -224,7 +281,7 @@ int	exec_pipeline(t_shell *shell)
 			// signal_handler
 			if (i > 0)
 			{
-				dup2(prev_pipe, 1);
+				dup2(prev_pipe, 0);
 				close(prev_pipe);
 			}
 			if (cmd->next)
@@ -251,9 +308,16 @@ int	exec_pipeline(t_shell *shell)
 	}
 	if (prev_pipe != -1)
 		close(prev_pipe);
-	// wait_for_children
-	gc_remove(&shell->gc, pids);
-	return (0);
+/* int j = 0, status;
+    while (j < i)
+    {
+        waitpid(pids[j], &status, 0);
+        j++;
+    }
+    if (i > 0 && WIFEXITED(status))
+        shell->last_exit_status = WEXITSTATUS(status);*/
+    gc_remove(&shell->gc, pids);
+    return 0;
 }
 
 void	start_exec(t_shell *shell)
@@ -268,7 +332,10 @@ void	start_exec(t_shell *shell)
 		tmp_in = dup(0);
 		tmp_out = dup(1);
 		if (!redirect(shell->cmd->redirs))
-			shell->last_exit_status = 1;
+    {
+        shell->last_exit_status = 1;
+        write(2, "minishell: redirection error\n", 29);
+    }
 		else
 			shell->last_exit_status = execute_builtin(shell);
 		restore_stds(tmp_in, tmp_out);
