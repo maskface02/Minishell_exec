@@ -21,9 +21,7 @@ void	add_back(t_env **env, t_env *new)
 {
 	t_env	*last;
 
-	if (!new)
-		return ;
-	if (!(*env))
+  if (!(*env))
 	{
 		*env = new;
 		return ;

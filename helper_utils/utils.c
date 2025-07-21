@@ -96,7 +96,7 @@ char	*ft_strdup(char *s, t_gc_node **gc)
 	dup[i] = '\0';
 	return (dup);
 }
-// norm
+
 void	cmd_error(char *cmd, char *arg, char *msg)
 {
 	write(2, "minishell: ", 11);

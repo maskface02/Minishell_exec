@@ -26,6 +26,7 @@ require("lazy").setup({
       require("42header").setup(opts)
     end,
   },
+
   -- C Formatter (42 Norm)
   {
     "cacharle/c_formatter_42.vim",

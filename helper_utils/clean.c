@@ -1,26 +1,12 @@
-#include "../exec.h"
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   clean.c                                            :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: zatais <zatais@student.1337.ma>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2025/07/21 08:42:35 by zatais            #+#    #+#             */
+/*   Updated: 2025/07/21 08:42:38 by zatais           ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
 
-void	free_cmd(t_command *cmd)
-{
-	t_command	*tmp;
-
-	while (cmd)
-	{
-		tmp = cmd;
-		cmd = cmd->next;
-		free(tmp);
-	}
-}
-
-void	free_env(t_env *env)
-{
-	t_env	*tmp;
-
-	while (env)
-	{
-		tmp = env;
-		env = env->next;
-		free(tmp->value);
-		free(tmp);
-	}
-}

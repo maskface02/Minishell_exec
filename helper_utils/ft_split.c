@@ -1,6 +1,6 @@
 #include "../exec.h"
 
-static	int	w_counter(char const *s, char c)
+static	int	w_counter(char *s, char c)
 {
 	int	count;
 	int	i;
@@ -19,7 +19,7 @@ static	int	w_counter(char const *s, char c)
 	return (count);
 }
 
-static	int	w_len(char const *s, char c)
+static	int	w_len(char *s, char c)
 {
 	int	len;
 
@@ -29,15 +29,13 @@ static	int	w_len(char const *s, char c)
 	return (len);
 }
 
-static	char	*extract_w(char const *s, int len)
+static	char	*extract_w(char *s, int len, t_gc_node **gc)
 {
 	char	*word;
 	int		i;
 
 	i = 0;
-	word = malloc(len + 1);
-	if (!word)
-		return (NULL);
+	word = gc_malloc(gc, len + 1);
 	while (i < len)
 	{
 		word[i] = s[i];
@@ -47,7 +45,7 @@ static	char	*extract_w(char const *s, int len)
 	return (word);
 }
 
-static	char	**fill_res(char const *s, char c, char **res)
+static	char	**fill_res(char *s, char c, char **res, t_gc_node **gc)
 {
 	int	idx;
 	int	len;
@@ -60,14 +58,7 @@ static	char	**fill_res(char const *s, char c, char **res)
 		if (*s)
 		{
 			len = w_len(s, c);
-			res[idx] = extract_w(s, len);
-			if (!res[idx])
-			{
-				while (idx > 0)
-					free(res[--idx]);
-				free(res);
-				return (NULL);
-			}
+			res[idx] = extract_w(s, len, gc);
 			idx++;
 			s += len;
 		}
@@ -76,18 +67,16 @@ static	char	**fill_res(char const *s, char c, char **res)
 	return (res);
 }
 
-char	**ft_split(char const *s, char c)
+char	**ft_split(char *s, char c, t_gc_node **gc)
 {
 	char	**res;
 
 	if (!s)
 		return (NULL);
-	res = malloc(sizeof(char *) * (w_counter(s, c) + 1));
-	if (!res)
-		return (NULL);
-	if (!fill_res(s, c, res))
+	res = gc_malloc(gc, sizeof(char *) * (w_counter(s, c) + 1));
+	if (!fill_res(s, c, res, gc))
 	{
-		free(res);
+		gc_remove(gc, res);
 		return (NULL);
 	}
 	return (res);

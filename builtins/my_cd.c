@@ -77,7 +77,6 @@ int	update_cwd(t_shell *shell, char *new_path, t_gc_node **gc)
 	char	*new_cwd;
 
 	new_cwd = ft_strdup(new_path, &shell->gc);
-	//free(shell->cwd);
   gc_remove(gc, shell->cwd);
 	shell->cwd = new_cwd;
 	return (1);
@@ -128,26 +127,3 @@ int	my_cd(t_shell *shell, char **args, t_gc_node **gc)
 		status = 1;
 	return (status);
 }
-/*
-int	main(int ac, char **av, char **envp)
-{
-	t_shell	*shell;
-	char	**args;
-
-	shell = malloc(sizeof(t_shell));
-  shell->env = NULL;
-	shell->cwd = getcwd(NULL, 0);
-	copy_env(envp, &shell->env);
-	args = malloc(16);
-	args[0] = "a/b/c/d";
-	args[1] = NULL;
-	//	my_unset(&shell->env, args + 1);
-  my_cd(shell, &args[0]);
-	my_cd(shell, &av[1]);
-	my_pwd(shell);
-  free(args);
-
- free_env(shell->env);
-  free(shell->cwd);
-  free(shell);
-}*/

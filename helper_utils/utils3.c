@@ -35,24 +35,6 @@ int	ft_strcmp(char *s1, char *s2)
 	return (s1[i] - s2[i]);
 }
 
-/*char	*ft_strndup(char *s, size_t n)
-{
-	char	*res;
-	size_t	i;
-
-	i = 0;
-	res = malloc(sizeof(n + 1));
-	if (!res)
-		return (NULL);
-	while (i < n)
-	{
-		res[i] = s[i];
-		i++;
-	}
-	res[i] = '\0';
-	return (res);
-}*/
-
 char	*ft_strchr(char *s, int c)
 {
 	int	i;
