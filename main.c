@@ -15,7 +15,8 @@ int	main(int ac, char **av, char **envp)
 		if (shell.r_line == NULL)
 			exit(0);
 		shell.cmd = malloc(sizeof(t_command));
-		shell.cmd->args = ft_split(shell.r_line, ' ');
+    shell.cmd->redirs = NULL;
+		shell.cmd->args = ft_split(shell.r_line, ' ', &shell.gc);
     shell.cmd->next = NULL;
 		if (ft_strlen(shell.r_line))
 		{

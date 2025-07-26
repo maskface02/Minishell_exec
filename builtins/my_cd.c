@@ -90,6 +90,7 @@ int	my_cd(t_shell *shell, char **args, t_gc_node **gc)
 	char	*new;
 	int		status;
 
+  /// cd in bash version read OLDPWD from the variable
 	oldpwd = getcwd(NULL, 0);
 	if (!oldpwd)
 	{

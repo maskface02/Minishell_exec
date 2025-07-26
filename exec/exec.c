@@ -160,9 +160,11 @@ char	*find_bin(char *arg, t_env *env, t_gc_node **gc, int *f_err)
 	int		i;
 
 	path = get_env_value(env, "PATH");
-	if (!path || !*path)
+	if (!path)
+		return (NULL);
+	if (!*path)
 	{
-		*f_err = 1;
+		*f_err = 1; // empty path like PATH=;
 		return (NULL);
 	}
 	paths = ft_split(path, ':', gc);
@@ -170,6 +172,7 @@ char	*find_bin(char *arg, t_env *env, t_gc_node **gc, int *f_err)
 	while (paths[++i])
 	{
 		full_path = ft_strjoin(ft_strjoin(paths[i], "/", gc), arg, gc);
+		// check if binary is a directory
 		if (!access(full_path, F_OK))
 			return (full_path);
 	}
@@ -186,7 +189,6 @@ int	is_not_found(t_shell *shell, t_command *cur_cmd, char **full_path,
 	{
 		cmd_error(cur_cmd->args[0], NULL, "command not found");
 		gc_clean(gc);
-		shell->last_exit_status = 127;
 		return (1);
 	}
 	if (ft_strchr(cur_cmd->args[0], '/'))
@@ -199,7 +201,6 @@ int	is_not_found(t_shell *shell, t_command *cur_cmd, char **full_path,
 			cmd_error(cur_cmd->args[0], NULL, "command not found");
 		else
 			cmd_error(cur_cmd->args[0], NULL, "No such file or directory");
-		shell->last_exit_status = 127;
 		gc_clean(gc);
 		return (1);
 	}
@@ -215,21 +216,18 @@ int	is_dir(char *full_path)
 	return (0);
 }
 
-int	direc_perm(t_shell *shell, t_command *cur_cmd, char *full_path,
-		t_gc_node **gc)
+int	dir_perm(char *full_path, t_gc_node **gc)
 {
 	if (is_dir(full_path))
 	{
 		cmd_error(full_path, NULL, "is a directory\n");
 		gc_clean(gc);
-		shell->last_exit_status = 126;
 		return (1);
 	}
 	if (access(full_path, X_OK))
 	{
 		cmd_error(full_path, NULL, "permission denied\n");
 		gc_clean(gc);
-		shell->last_exit_status = 126;
 		return (1);
 	}
 	return (0);
@@ -242,25 +240,25 @@ void	exec_child(t_shell *shell, t_command *cur_cmd)
 
 	if (redirect(cur_cmd->redirs) == -1)
 	{
-		shell->last_exit_status = 1;
+		gc_clean(&shell->gc);
 		exit(1);
 	}
 	if (is_builtin(cur_cmd->args[0]))
 	{
 		shell->last_exit_status = execute_builtin(shell);
+		gc_clean(&shell->gc);
 		exit(shell->last_exit_status);
 	}
 	if (is_not_found(shell, cur_cmd, &full_path, &shell->gc))
-		exit(shell->last_exit_status);
-	if (direc_perm(shell, cur_cmd, full_path, &shell->gc))
-		exit(shell->last_exit_status);
+		exit(127);
+	if (dir_perm(full_path, &shell->gc) == 1)
+		exit(126);
 	env_array = convert_env(shell, &shell->gc);
 	execve(full_path, cur_cmd->args, env_array);
 	ft_putstr_fd("minishell: ", 2);
 	ft_putstr_fd(strerror(errno), 2);
 	ft_putstr_fd("\n", 2);
 	gc_clean(&shell->gc);
-	exit(126);
 }
 
 void	c_proc(t_shell *shell, int *next_pipe, int prev_pipe, int i)
@@ -271,8 +269,6 @@ void	c_proc(t_shell *shell, int *next_pipe, int prev_pipe, int i)
 		dup2(prev_pipe, 0);
 		close(prev_pipe);
 	}
-	while (i--)
-		shell->cmd = shell->cmd->next;
 	if (shell->cmd->next)
 	{
 		dup2(next_pipe[1], 1);
@@ -293,7 +289,35 @@ void	set_close(t_command *cmd, int *next_pipe, int *prev_pipe, int i)
 	}
 }
 
-int	exec_pipeline(t_shell *shell)
+void	wait_all(t_shell *shell, int *pids, int i, int count)
+{
+	int	j;
+	int	status;
+
+	j = 0;
+	if (count > 1)
+	{
+		while (j < i)
+		{
+			waitpid(pids[j], &status, 0);
+			j++;
+		}
+		if (i > 0 && WIFEXITED(status))
+			shell->last_exit_status = WEXITSTATUS(status);
+		else if (WIFSIGNALED(status))
+			shell->last_exit_status = 128 + WTERMSIG(status);
+	}
+	else
+	{
+		wait(&status);
+		if (WIFEXITED(status))
+			shell->last_exit_status = WEXITSTATUS(status);
+		else if (WIFSIGNALED(status))
+			shell->last_exit_status = 128 + WTERMSIG(status);
+	}
+}
+
+void	exec_pipeline(t_shell *shell, int count)
 {
 	int		next_pipe[2];
 	pid_t	*pids;
@@ -302,7 +326,7 @@ int	exec_pipeline(t_shell *shell)
 
 	prev_pipe = -1;
 	i = 0;
-	pids = gc_malloc(&shell->gc, cmd_counter(shell->cmd) * sizeof(pid_t));
+	pids = gc_malloc(&shell->gc, count * sizeof(pid_t));
 	while (shell->cmd)
 	{
 		if (shell->cmd->next && pipe(next_pipe) == -1)
@@ -328,18 +352,9 @@ int	exec_pipeline(t_shell *shell)
 		shell->cmd = shell->cmd->next;
 		i++;
 	}
+	wait_all(shell, pids, --i, count);
 	if (prev_pipe != -1)
 		close(prev_pipe);
-	/* int j = 0, status;
-		while (j < i)
-		{
-			waitpid(pids[j], &status, 0);
-			j++;
-		}
-		if (i > 0 && WIFEXITED(status))
-			shell->last_exit_status = WEXITSTATUS(status);*/
-	gc_remove(&shell->gc, pids);
-	return (0);
 }
 
 void	start_exec(t_shell *shell)
@@ -365,5 +380,5 @@ void	start_exec(t_shell *shell)
 		close(tmp_out);
 	}
 	else
-		shell->last_exit_status = exec_pipeline(shell);
+		exec_pipeline(shell, count);
 }

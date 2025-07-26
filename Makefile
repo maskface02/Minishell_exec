@@ -1,4 +1,4 @@
-SRC_DIRS = builtins helper_utils
+SRC_DIRS = builtins helper_utils exec
 SRCS = main.c gc.c $(foreach dir,$(SRC_DIRS),$(wildcard $(dir)/*.c))
 OBJS = $(SRCS:.c=.o)
 NAME = minishell_exec
